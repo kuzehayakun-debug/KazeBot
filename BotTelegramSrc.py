@@ -528,7 +528,7 @@ def main():
     except Exception:
         pass
 
-    app = ApplicationBuilder().token("8539319746:AAHEdZ-d2P6dQFeS4jhwrJglV7Yp3doR1Jw").build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start_cmd))
