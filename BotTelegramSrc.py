@@ -109,7 +109,36 @@ def main():
     # NOTE: Render runs web services; long-running polling may be okay on a background worker.
     # Consider using webhooks if you host as a web service.
     #
-    print('\nREADY (placeholder). Replace with your bot setup.')
+    print("\nBot is preparing...")
 
-if __name__ == '__main__':
-    main()
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes
+)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is running!")
+
+
+# -----------------------
+# MAIN BOT STARTUP
+# -----------------------
+if __name__ == "__main__":
+    print("Starting Telegram bot...")
+
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Commands
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("get", send_file))
+    app.add_handler(CommandHandler("setkey", set_key))
+    app.add_handler(CommandHandler("delkey", del_key))
+
+    # Buttons
+    app.add_handler(CallbackQueryHandler(button))
+
+    print("Bot is running... Waiting for messages.")
+    app.run_polling()
