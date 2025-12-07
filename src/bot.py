@@ -84,9 +84,13 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not await is_user_authorized(user.id):
         await update.message.reply_text(
-            f"👋 WELCOME {user.full_name}!\n\n"
-            "🔐 Before using the generator, you must enter a valid KEY.\n"
-            "Buy key: @KAZEHAYAMODZ"
+            f"👋 WELCOME {fullname}!\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🔐 ʙᴇғᴏʀᴇ ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴛʜᴇ ɢᴇɴᴇʀᴀᴛᴏʀ, ʏᴏᴜ ɴᴇᴇᴅ ᴀ ᴠᴀʟɪᴅ ᴋᴇʏ.\n"
+            "ᴜsᴇ ᴛʜᴇ ᴋᴇʏ ғᴏʀ ᴏɴᴇ-ᴛɪᴍᴇ ᴀᴄᴛɪᴠᴀᴛɪᴏɴ.\n\n"
+            "💎 ᴇɴᴊᴏʏ ᴘʀɪᴠᴀᴛᴇ ʟɪɴᴇ ɢᴇɴᴇʀᴀᴛᴏʀ ɪɴ ᴋᴀᴢᴇʜᴀʏᴀ ᴠɪᴘ ʙᴏᴛ!\n"
+
+            "ʙᴜʏ ᴋᴇʏ: @KAZEHAYAMODZ"
         )
         return
 
