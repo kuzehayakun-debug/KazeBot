@@ -153,21 +153,20 @@ async def genkey_cmd(update, context):
 
     exp_disp = "Lifetime" if exp_time is None else PH_TIME()
 
-msg = (
-    "━━━━━━━━━━━━━━━━━━\n"
-    "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
-    "━━━━━━━━━━━━━━━━━━\n\n"
-    f"🔑 𝐊𝐞𝐲: `{k}`\n"
-    f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
-    
-    "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
-    "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
-    "2️⃣ Click start or /start\n"
-    "3️⃣ /key (your key)\n"
-    f"4️⃣ Example: /key `{k}`\n"
-)
+    msg = (
+        "━━━━━━━━━━━━━━━━━━\n"
+        "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        f"🔑 𝐊𝐞𝐲: `{k}`\n"
+        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
+        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
+        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
+        "2️⃣ Click start or /start\n"
+        "3️⃣ /key (your key)\n"
+        f"4️⃣ Example: /key `{k}`\n"
+    )
 
-await update.message.reply_text(msg, parse_mode="Markdown")
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 # ---------------- /key ----------------
 async def key_cmd(update, context):
