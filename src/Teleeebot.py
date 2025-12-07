@@ -15,7 +15,7 @@ from telegram.ext import (
 
 # ==================== CONFIG ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = 7201369115                  # ← ILISAN NI SA IMONG CHAT ID
+ADMIN_CHAT_ID = 123456789                  # ← ILISAN NI SA IMONG CHAT ID
 TARGET_CHAT = ADMIN_CHAT_ID                 # auto-send target
 # ================================================
 
@@ -103,21 +103,4 @@ if __name__ == "__main__":
     threading.Thread(target=keep_alive, daemon=True).start()
     
     # Run the Telegram bot
-    asyncio.run(run_bot())    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    # Ibalik tanan nimo nga handlers dinhi
-    app.add_handler(CommandHandler("start", start_cmd))
-    # ... ug uban pa
-
-    app.add_handler(CallbackQueryHandler(button_callback))
-
-    # Safe na pag-start sa auto task
-    app.pre_run_hook(on_startup)
-
-    print("BOT RUNNING on Render... Pogi mode ON!")
-    app.run_polling(drop_pending_updates=True)
-
-# ────── ENTRY POINT ──────
-if __name__ == "__main__":
-    threading.Thread(target=keep_alive, daemon=True).start()
-    main()
+    asyncio.run(run_bot())
