@@ -320,23 +320,6 @@ async def auto_hello_task(app):
         await asyncio.sleep(600)  # 10 minutes
 
 
-# ---------------- RUN BOT ----------------
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("genkey", genkey_cmd))
-    app.add_handler(CommandHandler("key", key_cmd))
-    app.add_handler(CommandHandler("revoke", revoke_cmd))
-    app.add_handler(CommandHandler("mytime", mytime_cmd))
-    app.add_handler(CommandHandler("broadcast", broadcast_cmd))
-    app.add_handler(CallbackQueryHandler(button_callback))
-
-    # Start auto task
-    asyncio.create_task(auto_hello_task(app))
-
-    print("BOT RUNNING on Render...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# ====== START AUTO TASK AFTER BOT INITIALIZES ======
+async def start_auto_tasks(app):
+    app.create_task(auto_hello_task(app))
