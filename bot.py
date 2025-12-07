@@ -41,7 +41,7 @@ FILES_DIR = Path("files")
 ASSETS_DIR = Path("assets")
 KEYS_FILE = Path("keys.json")
 USERS_FILE = Path("users.json")
-COOLDOWN_SECONDS = 15
+COOLDOWN_SECONDS = 30
 LINES_PER_GENERATE = 100
 INTRO_MP4 = ASSETS_DIR / "intro.mp4"
 
