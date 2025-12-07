@@ -348,7 +348,7 @@ async def button_callback(update, context):
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
-# ---------------- RUN BOT ----------------
+# --------------- RUN BOT ---------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -364,9 +364,10 @@ def main():
         # Start keep-alive loop
         asyncio.create_task(keep_alive(app))
 
-        # Start Telegram bot polling
+        # Start bot polling
         await app.run_polling()
 
+    # Correct runner
     asyncio.run(run())
 
 
