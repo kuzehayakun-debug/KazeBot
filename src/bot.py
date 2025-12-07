@@ -360,15 +360,15 @@ def main():
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    async def run():
-        # Start keep-alive loop
-        asyncio.create_task(keep_alive(app))
+    # ---- KEEP ALIVE ----
+    # run keep-alive AS A BACKGROUND TASK
+    async def on_start(application):
+        application.create_task(keep_alive(application))
 
-        # Start bot polling
-        await app.run_polling()
+    app.post_init = on_start
 
-    # Correct runner
-    asyncio.run(run())
+    # ---- START BOT ----
+    app.run_polling()
 
 
 if __name__ == "__main__":
