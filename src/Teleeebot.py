@@ -15,7 +15,7 @@ from telegram.ext import (
 
 # ==================== CONFIG ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = 123456789                  # ← ILISAN NI SA IMONG CHAT ID
+ADMIN_CHAT_ID = 7201369115                  # ← ILISAN NI SA IMONG CHAT ID
 TARGET_CHAT = ADMIN_CHAT_ID                 # auto-send target
 # ================================================
 
