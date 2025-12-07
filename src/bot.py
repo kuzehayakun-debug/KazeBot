@@ -109,18 +109,23 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
     ]
 
+    async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        ...
+    ]
+
     intro = ASSETS_DIR / "Telegram.mp4"
-if intro.exists():
-    await update.message.reply_video(
-        video=InputFile(intro),
-        caption="✨ Select an account type:",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
-else:
-    await update.message.reply_text(
-        "✨ Select an account type:",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
+    if intro.exists():
+        await update.message.reply_video(
+            video=InputFile(intro),
+            caption="✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        await update.message.reply_text(
+            "✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
 
 # ---------------- /key ----------------
 async def key_cmd(update, context):
