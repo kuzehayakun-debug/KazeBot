@@ -90,31 +90,37 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # ---------------- /start ----------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     keyboard = [
-        [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
-         InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
-
-        [InlineKeyboardButton("✨ CODM", callback_data="codm"),
-         InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire")],
-
-        [InlineKeyboardButton("🔰 Facebook", callback_data="facebook"),
-         InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
-
-        [InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
-         InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
-
-        [InlineKeyboardButton("♨️ Bloodstrike", callback_data="bloodstrike"),
-         InlineKeyboardButton("🎲 Random", callback_data="random")],
-
-        [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
-    ]
-
-    async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        ...
+        [
+            InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+            InlineKeyboardButton("🤖 Roblox", callback_data="roblox")
+        ],
+        [
+            InlineKeyboardButton("✨ CODM", callback_data="codm"),
+            InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire"),
+        ],
+        [
+            InlineKeyboardButton("📗 Facebook", callback_data="facebook"),
+            InlineKeyboardButton("📧 Gmail", callback_data="gmail"),
+        ],
+        [
+            InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
+            InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite"),
+        ],
+        [
+            InlineKeyboardButton("🔥 Bloodstrike", callback_data="bloodstrike"),
+            InlineKeyboardButton("🎲 Random", callback_data="random"),
+        ],
+        [
+            InlineKeyboardButton("⚡ 100082", callback_data="100082")
+        ],
     ]
 
     intro = ASSETS_DIR / "Telegram.mp4"
+
     if intro.exists():
         await update.message.reply_video(
             video=InputFile(intro),
