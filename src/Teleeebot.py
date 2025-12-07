@@ -14,7 +14,7 @@ from telegram.ext import (
 
 # ────── CONFIG ──────
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = 123456789                  # ← ilisan ni sa imong real ID
+ADMIN_CHAT_ID = 7201369115                  # ← ilisan ni sa imong real ID
 TARGET_CHAT = ADMIN_CHAT_ID                # auto-send target (pwede usbon kung lahi)
 # ─────────────────────
 
