@@ -82,15 +82,19 @@ async def is_user_authorized(uid):
 # ---------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    
     if not await is_user_authorized(user.id):
         await update.message.reply_text(
-            f"👋 WELCOME {fullname}!\n"
+            f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 ʙᴇғᴏʀᴇ ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴛʜᴇ ɢᴇɴᴇʀᴀᴛᴏʀ, ʏᴏᴜ ɴᴇᴇᴅ ᴀ ᴠᴀʟɪᴅ ᴋᴇʏ.\n"
-            "ᴜsᴇ ᴛʜᴇ ᴋᴇʏ ғᴏʀ ᴏɴᴇ-ᴛɪᴍᴇ ᴀᴄᴛɪᴠᴀᴛɪᴏɴ.\n\n"
-            "💎 ᴇɴᴊᴏʏ ᴘʀɪᴠᴀᴛᴇ ʟɪɴᴇ ɢᴇɴᴇʀᴀᴛᴏʀ ɪɴ ᴋᴀᴢᴇʜᴀʏᴀ ᴠɪᴘ ʙᴏᴛ!\n"
-
-            "ʙᴜʏ ᴋᴇʏ: @KAZEHAYAMODZ"
+            "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
+            "• Before you can access the generator,\n"
+            "• You must enter a valid activation key.\n\n"
+            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
+            "✨ Fast activation\n"
+            "✨ Secure verification\n\n"
+            "🛒 Buy key here: @KAZEHAYAMODZ\n"
+            "━━━━━━━━━━━━━━━━━━━━━━"
         )
         return
 
