@@ -110,43 +110,16 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     intro = ASSETS_DIR / "Telegram.mp4"
-    if intro.exists():
-        await update.message.reply_video(
-            video=FSInputFile(intro),
-            caption="✨ Select an account type:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-    else:
-        await update.message.reply_text(
-            "✨ Select an account type:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-
-# ---------------- /genkey ----------------
-async def genkey_cmd(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("⛔ Forbidden")
-
-    duration = context.args[0] if context.args else "1d"
-    expires = parse_duration(duration)
-    data = load_keys()
-
-    k = make_key(8)
-    exp_time = None if expires is None else time.time() + expires
-
-    data["keys"][k] = {
-        "used": False,
-        "owner": None,
-        "created_by": ADMIN_CHAT_ID,
-        "created_at": time.time(),
-        "expires_at": exp_time,
-    }
-    save_keys(data)
-
-    exp_disp = "Lifetime" if exp_time is None else PH_TIME()
+if intro.exists():
+    await update.message.reply_video(
+        video=InputFile(intro),
+        caption="✨ Select an account type:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+else:
     await update.message.reply_text(
-        f"✨ Key Generated!\n🔑 `{k}`\n📅 Valid until: {exp_disp}",
-        parse_mode="Markdown",
+        "✨ Select an account type:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 # ---------------- /key ----------------
