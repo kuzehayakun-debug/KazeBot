@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import asyncio
@@ -78,6 +79,18 @@ async def is_user_authorized(uid):
     exp = info.get("expires_at")
     if exp is None: return True
     return time.time() <= exp
+
+# ---------------- KEEP ALIVE (ANTI-IDLE) ----------------
+async def keep_alive(app):
+    while True:
+        try:
+            # Magse-send ng invisible ping sa admin
+            await app.bot.send_message(ADMIN_CHAT_ID, "‎")
+            # NOTE: may "invisible unicode" yan para di nakakainis
+        except Exception:
+            pass
+        
+        await asyncio.sleep(600)  # 10 minutes
 
 # ---------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -347,8 +360,15 @@ def main():
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    print("BOT RUNNING on Render...")
-    app.run_polling()
+    async def run():
+        # Start keep-alive loop
+        asyncio.create_task(keep_alive(app))
+
+        # Start Telegram bot polling
+        await app.run_polling()
+
+    app.run_async(run())
+
 
 if __name__ == "__main__":
     main()
