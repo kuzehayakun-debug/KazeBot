@@ -80,44 +80,61 @@ async def is_user_authorized(uid):
     return time.time() <= exp
 
 # ---------------- /start ----------------
+# --------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    if not await is_user_authorized(user_id):
+    fullname = user.full_name
+
+    if not await is_user_authorized(user.id):
         await update.message.reply_text(
             f"👋 WELCOME {fullname}!\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 ʙᴇғᴏʀᴇ ʏᴏᴜ ᴄᴀɴ ᴜsᴇ ᴛʜᴇ ɢᴇɴᴇʀᴀᴛᴏʀ, ʏᴏᴜ ɴᴇᴇᴅ ᴀ ᴠᴀʟɪᴅ ᴋᴇʏ.\n"
-            "ᴜsᴇ ᴛʜᴇ ᴋᴇʏ ғᴏʀ ᴏɴᴇ-ᴛɪᴍᴇ ᴀᴄᴛɪᴠᴀᴛɪᴏɴ.\n\n"
-            "💎 ᴇɴᴊᴏʏ ᴘʀɪᴠᴀᴛᴇ ʟɪɴᴇ ɢᴇɴᴇʀᴀᴛᴏʀ ɪɴ ᴋᴀᴢᴇʜᴀʏᴀ ᴠɪᴘ ʙᴏᴛ!\n"
-
-            "ʙᴜʏ ᴋᴇʏ: @KAZEHAYAMODZ"
+            "──────────────────────\n\n"
+            "🔐 BEFORE YOU CAN USE THE GENERATOR:\n"
+            "• USE THE KEY FOR ONE-TIME ACTIVATION\n"
+            "💎 ENJOY PRIVATE LINE GENERATOR INSTANTLY\n\n"
+            "BUY KEY: @KAZEHAYAMODZ"
         )
         return
 
-    # -------- AUTHORIZED USER MENU ------------
     keyboard = [
-    [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
-     InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+        [
+            InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+            InlineKeyboardButton("🤖 Roblox", callback_data="roblox")
+        ],
+        [
+            InlineKeyboardButton("✨ CODM", callback_data="codm"),
+            InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire"),
+        ],
+        [
+            InlineKeyboardButton("📗 Facebook", callback_data="facebook"),
+            InlineKeyboardButton("📧 Gmail", callback_data="gmail"),
+        ],
+        [
+            InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
+            InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite"),
+        ],
+        [
+            InlineKeyboardButton("🔥 Bloodstrike", callback_data="bloodstrike"),
+            InlineKeyboardButton("🎲 Random", callback_data="random"),
+        ],
+        [
+            InlineKeyboardButton("⚡ 100082", callback_data="100082")
+        ],
+    ]
 
-    [InlineKeyboardButton("✨ CODM", callback_data="codm"),
-     InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire")],
+    intro = ASSETS_DIR / "Telegram.mp4"
 
-    [InlineKeyboardButton("🔰 Facebook", callback_data="facebook"),
-     InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
-
-    [InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
-     InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
-
-    [InlineKeyboardButton("♨️ Bloodstrike", callback_data="bloodstrike"),
-     InlineKeyboardButton("🎲 Random", callback_data="random")],
-
-    [InlineKeyboardButton("⚡ 100082", callback_data="100082")]
-]
-    await update.message.reply_video(
-    video="Telegram.mp4",
-    caption="\n\n✨ Select an account type to generate:",
-    reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    if intro.exists():
+        await update.message.reply_video(
+            video=InputFile(intro),
+            caption="✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        await update.message.reply_text(
+            "✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
 # ---------------- /key ----------------
 async def key_cmd(update, context):
     user = update.effective_user
