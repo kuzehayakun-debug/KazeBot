@@ -11,7 +11,7 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    FSInputFile,
+    InputFile,
 )
 from telegram.ext import (
     ApplicationBuilder,
