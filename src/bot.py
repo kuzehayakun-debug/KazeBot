@@ -87,14 +87,8 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
-            "• Before you can access the generator,\n"
-            "• You must enter a valid activation key.\n\n"
-            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
-            "✨ Fast activation\n"
-            "✨ Secure verification\n\n"
-            "🛒 Buy key here: @KAZEHAYAMODZ\n"
-            "━━━━━━━━━━━━━━━━━━━━━━"
+            "🔐 Activation key required.\n"
+            "Buy key: @KAZEHAYAMODZ\n"
         )
         return
 
@@ -117,18 +111,10 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
     ]
 
-    intro = ASSETS_DIR / "Telegram.mp4"
-    if intro.exists():
-        await update.message.reply_video(
-            video=FSInputFile(intro),
-            caption="✨ Select an account type:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-    else:
-        await update.message.reply_text(
-            "✨ Select an account type:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+    await update.message.reply_text(
+        "✨ Select an account type:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
 # ---------------- /genkey ----------------
 async def genkey_cmd(update, context):
@@ -151,22 +137,7 @@ async def genkey_cmd(update, context):
     }
     save_keys(data)
 
-    exp_disp = "Lifetime" if exp_time is None else PH_TIME()
-
-    msg = (
-        "━━━━━━━━━━━━━━━━━━\n"
-        "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        f"🔑 𝐊𝐞𝐲: `{k}`\n"
-        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
-        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
-        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
-        "2️⃣ Click start or /start\n"
-        "3️⃣ /key (your key)\n"
-        f"4️⃣ Example: /key `{k}`\n"
-    )
-
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    await update.message.reply_text(f"Generated key: `{k}`", parse_mode="Markdown")
 
 # ---------------- /key ----------------
 async def key_cmd(update, context):
@@ -314,7 +285,6 @@ async def button_callback(update, context):
         return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
     user_cool[user.id] = now
 
-    # Loading message
     msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
     await asyncio.sleep(2)
     await msg.delete()
@@ -335,6 +305,21 @@ async def button_callback(update, context):
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
+# ============================================================
+#              AUTO SEND EVERY 10 MINUTES
+# ============================================================
+async def auto_hello_task(app):
+    TARGET_CHAT = ADMIN_CHAT_ID
+
+    while True:
+        try:
+            await app.bot.send_message(TARGET_CHAT, "Hello pogi 😎")
+        except Exception as e:
+            print("Auto-send error:", e)
+
+        await asyncio.sleep(600)  # 10 minutes
+
+
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -346,6 +331,9 @@ def main():
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
+
+    # Start auto task
+    asyncio.create_task(auto_hello_task(app))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
