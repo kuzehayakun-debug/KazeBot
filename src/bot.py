@@ -367,7 +367,7 @@ def main():
         # Start Telegram bot polling
         await app.run_polling()
 
-    app.run_async(run())
+    asyncio.run(run())
 
 
 if __name__ == "__main__":
