@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BOT_TOKEN = os.getenv("8539319746:AAHEdZ-d2P6dQFeS4jhwrJglV7Yp3doR1Jw")
-GITHUB_TOKEN = os.getenv("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")
-GITHUB_REPO = os.getenv("kuzehayakun-debug/KazeBot")  # format: user/repo
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = os.getenv("GITHUB_REPO")
+GITHUB_OWNER = os.getenv("GITHUB_OWNER")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
