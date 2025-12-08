@@ -337,8 +337,12 @@ async def button_callback(update, context):
     if count == 0:
         return await q.message.reply_text("⚠️ No more lines.")
 
-    bio = io.BytesIO(content.encode())
-    bio.name = f"{choice}.txt"
+    await q.message.reply_document(
+      document=bio,
+      filename=f"{choice}.txt",
+      caption=caption,
+      parse_mode="Markdown"
+    )
 
     caption = (
         
