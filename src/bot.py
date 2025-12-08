@@ -2,10 +2,24 @@ import os
 import json
 import asyncio
 import time
+import Thread
 from datetime import datetime, timedelta
 from pathlib import Path
 import secrets
 import io
+from flask import Flask
+from threading import Thread
+import os
+
+app_web = Flask('')
+
+@app_web.route('/')
+def home():
+    return "Bot is online!"
+
+def keep_alive():
+    port = int(os.environ.get("PORT", 10000))
+    Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
 
 from telegram import (
     Update,
@@ -351,4 +365,5 @@ def main():
     app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    keep_alive()
+    asyncio.run(main())
