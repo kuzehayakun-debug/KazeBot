@@ -344,40 +344,55 @@ async def auto_hello_task(app):
         try:
             await app.bot.send_message(
                 chat_id=TARGET_CHAT,
-                text=f"Hi pogi 😍\nTime: {datetime.now().strftime('%H:%M:%S')}"
+                text=f"Hello pogi 😍\nAuto-sent: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
             print("Auto message sent!")
         except Exception as e:
             print(f"Auto-send error: {e}")
-
-        await asyncio.sleep(60)  # 1 minute
+        
+        await asyncio.sleep(600)  # 10 minutes
 # ===========================================================
 
+# =============== KEEP-ALIVE WEB SERVER (Render Free) ===============
 def keep_alive():
     port = int(os.environ.get("PORT", 10000))
-    print(f"Keep-alive server starting on port {port}...")
-    with socketserver.TCPServer(("0.0.0.0", port), SimpleHTTPRequestHandler) as httpd:
-        print(f"Keep-alive server successfully bound to 0.0.0.0:{port} – 24/7 na gyud!")
+    with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
+        print(f"Keep-alive server running on port {port}")
         httpd.serve_forever()
-        
+# ====================================================================
+
 # ========================= MAIN BOT =========================
 async def run_bot():
+    if not BOT_TOKEN:
+        print("ERROR: BOT_TOKEN not found in environment variables!")
+        return
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Add all your handlers
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
+    app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
+    app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
 
+    # Start the bot properly
     await app.initialize()
     await app.start()
-    print("BOT RUNNING...")
+    print("BOT IS FULLY CONNECTED! Starting auto task...")
 
+    # Safe na i-start ang auto task diri
     app.create_task(auto_hello_task(app))
 
+    # Keep the bot running forever
     await asyncio.Event().wait()
 
 # ========================= ENTRY POINT =========================
 if __name__ == "__main__":
+    # Start keep-alive web server in background
+    threading.Thread(target=keep_alive, daemon=True).start()
+    
+    # Run the Telegram bot
     asyncio.run(run_bot())
