@@ -21,8 +21,23 @@ TARGET_CHAT = ADMIN_CHAT_ID                 # auto-send target
 
 # ---------- Ibalik imong tinuod nga commands dinhi ----------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello pogi 😍 Bot is online!")
-
+    user = update.effective_user
+    
+    if not await is_user_authorized(user.id):
+        await update.message.reply_text(
+            f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
+            "• Before you can access the generator,\n"
+            "• You must enter a valid activation key.\n\n"
+            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
+            "✨ Fast activation\n"
+            "✨ Secure verification\n\n"
+            "🛒 Buy key here: @KAZEHAYAMODZ\n"
+            "━━━━━━━━━━━━━━━━━━━━━━"
+        )
+        return
+        
 # Ibalik imong ubang functions (genkey, key, revoke, mytime, broadcast, etc.)
 # Example placeholders lang ni para dili mag-error:
 async def genkey_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
