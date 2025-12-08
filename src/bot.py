@@ -285,7 +285,7 @@ FILE_MAP = {
 }
 
 user_cool = {}
-COOLDOWN = 180
+COOLDOWN = 80
 
 def extract_lines(path, n=100):
     if not path.exists(): return "", 0
@@ -303,10 +303,10 @@ async def send_alert(bot, user, typ, count):
         await bot.send_message(
             ADMIN_CHAT_ID,
             f"📢 New Generation:\n"
-            f"User: {user.first_name} ({user.id})\n"
-            f"Type: {typ}\n"
-            f"Lines: {count}\n"
-            f"Time: {PH_TIME()}",
+            f"🔰User: {user.first_name} ({user.id})\n"
+            f"📁Type: {typ}\n"
+            f"📊Lines: {count}\n"
+            f"⌛Time: {PH_TIME()}",
         )
     except:
         pass
@@ -349,10 +349,9 @@ async def button_callback(update, context):
         "🎉 GENERATION COMPLETED!\n\n"
         f"📁 Target: {choice}\n"
         f"📈 Lines: {count}\n"
-        "🎨 Format: User:Pass\n"
         "🧹 Duplicates: Removed\n"
         f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-        "🤖 Powered by @Chayxbot\n"
+        "🤖 Powered by @KAZEHAYAMODZ\n"
         "💎 Thank you for using premium service!"
    )
 
