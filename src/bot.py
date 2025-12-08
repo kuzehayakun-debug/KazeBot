@@ -351,22 +351,24 @@ def keep_alive():
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # handlers
+    # 🔹 ALL COMMAND HANDLERS
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
+
+    # 🔹 CALLBACK BUTTONS (Dapat CLOSED properly)
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    # Start keep-alive task
-    asyncio.create_task(auto_task(app))
-
     print("BOT RUNNING on Render...")
-    
+
+    # 🔹 REQUIRED STEPS FOR RUNNING
     await app.initialize()
     await app.start()
+
+    # 🔹 Para hindi mamatay ang bot
     await asyncio.Event().wait()
 
 # ============================================
