@@ -285,7 +285,7 @@ FILE_MAP = {
 }
 
 user_cool = {}
-COOLDOWN = 80
+COOLDOWN = 60
 
 def extract_lines(path, n=100):
     if not path.exists(): return "", 0
@@ -325,7 +325,7 @@ async def button_callback(update, context):
 
     now = time.time()
     if now - user_cool.get(user.id, 0) < COOLDOWN:
-        return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
+        return await q.message.reply_text(f"⏳ 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 {COOLDOWN}s")
     user_cool[user.id] = now
 
     # Loading message
