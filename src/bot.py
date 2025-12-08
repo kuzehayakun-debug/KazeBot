@@ -337,27 +337,26 @@ async def button_callback(update, context):
     if count == 0:
         return await q.message.reply_text("⚠️ No more lines.")
 
-    await q.message.reply_document(
-      document=bio,
-      filename=f"{choice}.txt",
-      caption=caption,
-      parse_mode="Markdown"
-    )
+bio = io.BytesIO(content.encode())
+bio.name = f"{choice}.txt"
 
-    caption = (
-        
-        "🎉 GENERATION COMPLETED!\n\n"
-        f"📁 Target: {choice}\n"
-        f"📈 Lines: {count}\n"
-        "🧹 Duplicates: Removed\n"
-        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-        "🤖 Powered by @KAZEHAYAMODZ\n"
-        "💎 Thank you for using premium service!"
-   )
+caption = (
+    "🎉 GENERATION COMPLETED!\n\n"
+    f"📁 Target: {choice}\n"
+    f"📈 Lines: {count}\n"
+    "🎨 Format: User:Pass\n"
+    "🧹 Duplicates: Removed\n"
+    f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+    "🤖 Powered by @Chayxbot\n"
+    "💎 Thank you for using premium service!"
+)
 
-    await q.message.reply_text(caption)
-    await send_alert(context.bot, user, choice, count)
-
+await q.message.reply_document(
+    document=bio,
+    filename=f"{choice}.txt",
+    caption=caption,
+    parse_mode="Markdown"
+)
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
