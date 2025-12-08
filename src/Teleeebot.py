@@ -352,8 +352,9 @@ async def auto_hello_task(app):
 
 def keep_alive():
     port = int(os.environ.get("PORT", 10000))
-    with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
-        print(f"Keep-alive server running on port {port}")
+    print(f"Keep-alive server starting on port {port}...")
+    with socketserver.TCPServer(("0.0.0.0", port), SimpleHTTPRequestHandler) as httpd:
+        print(f"Keep-alive server successfully bound to 0.0.0.0:{port} – 24/7 na gyud!")
         httpd.serve_forever()
         
 # ========================= MAIN BOT =========================
