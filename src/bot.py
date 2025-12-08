@@ -2,11 +2,11 @@ import os
 import json
 import asyncio
 import time
-import Thread
 from datetime import datetime, timedelta
 from pathlib import Path
 import secrets
 import io
+from flask import Flask
 from flask import Flask
 from threading import Thread
 import os
@@ -20,7 +20,7 @@ def home():
 def keep_alive():
     port = int(os.environ.get("PORT", 10000))
     Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
-
+    
 from telegram import (
     Update,
     InlineKeyboardButton,
