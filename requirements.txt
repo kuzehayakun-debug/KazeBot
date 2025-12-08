@@ -3,3 +3,4 @@ requests
 PyGithub
 aiofiles
 python-dotenv
+flask
