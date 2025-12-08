@@ -19,6 +19,61 @@ ADMIN_CHAT_ID = 7201369115                  # ← ILISAN NI SA IMONG CHAT ID
 TARGET_CHAT = ADMIN_CHAT_ID                 # auto-send target
 # ================================================
 
+if not BOT_TOKEN:
+    raise SystemExit("❌ BOT_TOKEN missing in Render environment.")
+
+# ---------------- DIRECTORIES ----------------
+FILES_DIR = Path("files")
+ASSETS_DIR = Path("assets")
+KEYS_FILE = Path("keys.json")
+
+FILES_DIR.mkdir(exist_ok=True)
+ASSETS_DIR.mkdir(exist_ok=True)
+
+if not KEYS_FILE.exists():
+    KEYS_FILE.write_text(json.dumps({"keys": {}, "users": {}}, indent=2))
+
+PH_TIME = lambda: datetime.now().strftime("%Y-%m-%d %I:%M %p")
+
+# ---------------- LOAD KEY SYSTEM ----------------
+def load_keys():
+    try:
+        data = json.loads(KEYS_FILE.read_text())
+        if "keys" not in data: data["keys"] = {}
+        if "users" not in data: data["users"] = {}
+        return data
+    except:
+        KEYS_FILE.write_text(json.dumps({"keys": {}, "users": {}}, indent=2))
+        return {"keys": {}, "users": {}}
+
+def save_keys(data):
+    KEYS_FILE.write_text(json.dumps(data, indent=2))
+
+# make random key
+def make_key(length=8):
+    chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+    return "".join(secrets.choice(chars) for _ in range(length))
+
+def parse_duration(text):
+    text = text.lower().strip()
+    if text in ("life", "lifetime"):
+        return None
+    if text.endswith("d"):
+        return int(text[:-1]) * 86400
+    if text.endswith("h"):
+        return int(text[:-1]) * 3600
+    return 86400
+
+async def is_user_authorized(uid):
+    data = load_keys()
+    kid = data["users"].get(str(uid))
+    if not kid: return False
+    info = data["keys"].get(kid)
+    if not info: return False
+    exp = info.get("expires_at")
+    if exp is None: return True
+    return time.time() <= exp
+    
 # ---------- Ibalik imong tinuod nga commands dinhi ----------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
