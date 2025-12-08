@@ -340,13 +340,19 @@ async def button_callback(update, context):
     bio = io.BytesIO(content.encode())
     bio.name = f"{choice}.txt"
 
-    await q.message.reply_text(
-        "✨ Generation Complete!\n"
-        f"🗂 Lines: {count}\n"
-        f"🔍 Type: {choice.capitalize()}"
-    )
+    caption = (
+        
+        "🎉 GENERATION COMPLETED!\n\n"
+        f"📁 Target: {choice}\n"
+        f"📈 Lines: {count}\n"
+        "🎨 Format: User:Pass\n"
+        "🧹 Duplicates: Removed\n"
+        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+        "🤖 Powered by @Chayxbot\n"
+        "💎 Thank you for using premium service!"
+   )
 
-    await q.message.reply_document(bio)
+    await q.message.reply_text(caption)
     await send_alert(context.bot, user, choice, count)
 
 # ---------------- RUN BOT ----------------
