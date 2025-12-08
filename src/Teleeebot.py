@@ -335,6 +335,21 @@ async def button_callback(update, context):
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
+# =============== AUTO SEND EVERY 10 MINUTES ===============
+async def auto_hello_task(app):
+    while True:
+        try:
+            await app.bot.send_message(
+                chat_id=TARGET_CHAT,
+                text=f"Hello pogi 😍\nAuto-sent: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            print("Auto message sent!")
+        except Exception as e:
+            print(f"Auto-send error: {e}")
+        
+        await asyncio.sleep(600)  # 10 minutes
+# ===========================================================
+
 # ========================= MAIN BOT =========================
 async def run_bot():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
