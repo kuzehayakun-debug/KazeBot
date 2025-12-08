@@ -58,7 +58,7 @@ async def auto_hello_task(app):
         except Exception as e:
             print(f"Auto-send error: {e}")
         
-        await asyncio.sleep(30)  # 10 minutes
+        await asyncio.sleep(300)  # 10 minutes
 # ===========================================================
 
 # =============== KEEP-ALIVE WEB SERVER (Render Free) ===============
