@@ -334,8 +334,8 @@ async def button_callback(update, context):
     await msg.delete()
 
     content, count = extract_lines(FILE_MAP[choice], 100)
-    if count == 0:
-        return await q.message.reply_text("⚠️ No more lines.")
+if count == 0:
+    return await q.message.reply_text("⚠️ No more lines.")
 
 bio = io.BytesIO(content.encode())
 bio.name = f"{choice}.txt"
@@ -356,6 +356,7 @@ await q.message.reply_document(
     caption=caption,
     parse_mode="Markdown"
 )
+
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
