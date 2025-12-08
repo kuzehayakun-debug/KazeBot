@@ -350,6 +350,12 @@ async def auto_hello_task(app):
         await asyncio.sleep(60)  # 1 minute
 # ===========================================================
 
+def keep_alive():
+    port = int(os.environ.get("PORT", 10000))
+    with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
+        print(f"Keep-alive server running on port {port}")
+        httpd.serve_forever()
+        
 # ========================= MAIN BOT =========================
 async def run_bot():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
