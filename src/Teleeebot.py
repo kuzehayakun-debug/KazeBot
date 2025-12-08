@@ -5,23 +5,14 @@ import json
 import time
 import asyncio
 import os
-import threading
 from datetime import datetime
-from http.server import SimpleHTTPRequestHandler
-import socketserver
 
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-)
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     InputFile,
+    FSInputFile,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -32,8 +23,8 @@ from telegram.ext import (
 
 # ==================== CONFIG ====================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = 7201369115                  # ← ILISAN NI SA IMONG CHAT ID
-TARGET_CHAT = ADMIN_CHAT_ID                 # auto-send target
+ADMIN_CHAT_ID = 7201369115                  
+TARGET_CHAT = ADMIN_CHAT_ID                 
 # ================================================
 
 if not BOT_TOKEN:
@@ -102,9 +93,6 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
             "• Before you can access the generator,\n"
             "• You must enter a valid activation key.\n\n"
-            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
-            "✨ Fast activation\n"
-            "✨ Secure verification\n\n"
             "🛒 Buy key here: @KAZEHAYAMODZ\n"
             "━━━━━━━━━━━━━━━━━━━━━━"
         )
@@ -170,12 +158,7 @@ async def genkey_cmd(update, context):
         "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
         "━━━━━━━━━━━━━━━━━━\n\n"
         f"🔑 𝐊𝐞𝐲: `{k}`\n"
-        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
-        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
-        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
-        "2️⃣ Click start or /start\n"
-        "3️⃣ /key (your key)\n"
-        f"4️⃣ Example: /key `{k}`\n"
+        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n"
     )
 
     await update.message.reply_text(msg, parse_mode="Markdown")
@@ -185,8 +168,8 @@ async def key_cmd(update, context):
     user = update.effective_user
     if not context.args:
         return await update.message.reply_text("Usage: /key <KEY>")
-    key = context.args[0]
 
+    key = context.args[0]
     data = load_keys()
     info = data["keys"].get(key)
     if not info:
@@ -228,46 +211,7 @@ async def mytime_cmd(update, context):
         f"⏳ Remaining: {d}d {h}h {m}m"
     )
 
-# ---------------- /revoke ----------------
-async def revoke_cmd(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("⛔ Forbidden")
-    if not context.args:
-        return await update.message.reply_text("Usage: /revoke <KEY>")
-    k = context.args[0]
-
-    data = load_keys()
-    info = data["keys"].pop(k, None)
-    if info:
-        uid = str(info.get("owner"))
-        if uid in data["users"]:
-            data["users"].pop(uid)
-        save_keys(data)
-        await update.message.reply_text(f"Revoked: {k}")
-    else:
-        await update.message.reply_text("Not found.")
-
-# ---------------- /broadcast ----------------
-async def broadcast_cmd(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("⛔ Forbidden")
-    if not context.args:
-        return update.message.reply_text("Usage: /broadcast <message>")
-
-    msg = " ".join(context.args)
-    data = load_keys()
-
-    count = 0
-    for uid in data["users"]:
-        try:
-            await context.bot.send_message(uid, f"📢 Owner Notice:\n{msg}")
-            count += 1
-        except:
-            pass
-
-    await update.message.reply_text(f"Sent to {count} users.")
-
-# ---------------- MAIN GENERATOR ----------------
+# ---------------- FILE GENERATION ----------------
 FILE_MAP = {
     "valorant": FILES_DIR / "Valorant.txt",
     "roblox": FILES_DIR / "Roblox.txt",
@@ -326,7 +270,6 @@ async def button_callback(update, context):
         return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
     user_cool[user.id] = now
 
-    # Loading message
     msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
     await asyncio.sleep(2)
     await msg.delete()
@@ -339,69 +282,44 @@ async def button_callback(update, context):
     bio.name = f"{choice}.txt"
 
     await q.message.reply_text(
-        "✨ Generation Complete!\n"
-        f"🗂 Lines: {count}\n"
-        f"🔍 Type: {choice.capitalize()}"
+        f"✨ Generation Complete!\n🗂 Lines: {count}\n🔍 Type: {choice.capitalize()}"
     )
-
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
-# =============== AUTO SEND EVERY 10 MINUTES ===============
+# =============== AUTO SEND EVERY 1 MINUTE ===============
 async def auto_hello_task(app):
     while True:
         try:
             await app.bot.send_message(
                 chat_id=TARGET_CHAT,
-                text=f"Hello pogi 😍\nAuto-sent: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                text=f"Hi pogi 😍\nTime: {datetime.now().strftime('%H:%M:%S')}"
             )
             print("Auto message sent!")
         except Exception as e:
             print(f"Auto-send error: {e}")
-        
-        await asyncio.sleep(300)  # 10 minutes
-# ===========================================================
 
-# =============== KEEP-ALIVE WEB SERVER (Render Free) ===============
-def keep_alive():
-    port = int(os.environ.get("PORT", 10000))
-    with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
-        print(f"Keep-alive server running on port {port}")
-        httpd.serve_forever()
-# ====================================================================
+        await asyncio.sleep(60)  # 1 minute
+# ===========================================================
 
 # ========================= MAIN BOT =========================
 async def run_bot():
-    if not BOT_TOKEN:
-        print("ERROR: BOT_TOKEN not found in environment variables!")
-        return
-
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Add all your handlers
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
-    app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
-    app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    # Start the bot properly
     await app.initialize()
     await app.start()
-    print("BOT IS FULLY CONNECTED! Starting auto task...")
+    print("BOT RUNNING...")
 
-    # Safe na i-start ang auto task diri
     app.create_task(auto_hello_task(app))
 
-    # Keep the bot running forever
     await asyncio.Event().wait()
 
 # ========================= ENTRY POINT =========================
 if __name__ == "__main__":
-    # Start keep-alive web server in background
-    threading.Thread(target=keep_alive, daemon=True).start()
-    
-    # Run the Telegram bot
     asyncio.run(run_bot())
