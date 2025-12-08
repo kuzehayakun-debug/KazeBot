@@ -1,18 +1,17 @@
+import os
+import json
+import asyncio
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 import secrets
 import io
-import json
-import time
-import asyncio
-import os
-from datetime import datetime
 
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     InputFile,
-    FSInputFile,
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -21,11 +20,9 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# ==================== CONFIG ====================
+# ---------------- ENVIRONMENT VARIABLES ----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = 7201369115                  
-TARGET_CHAT = ADMIN_CHAT_ID                 
-# ================================================
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))
 
 if not BOT_TOKEN:
     raise SystemExit("❌ BOT_TOKEN missing in Render environment.")
@@ -93,6 +90,9 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
             "• Before you can access the generator,\n"
             "• You must enter a valid activation key.\n\n"
+            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
+            "✨ Fast activation\n"
+            "✨ Secure verification\n\n"
             "🛒 Buy key here: @KAZEHAYAMODZ\n"
             "━━━━━━━━━━━━━━━━━━━━━━"
         )
@@ -158,7 +158,12 @@ async def genkey_cmd(update, context):
         "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
         "━━━━━━━━━━━━━━━━━━\n\n"
         f"🔑 𝐊𝐞𝐲: `{k}`\n"
-        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n"
+        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
+        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
+        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
+        "2️⃣ Click start or /start\n"
+        "3️⃣ /key (your key)\n"
+        f"4️⃣ Example: /key `{k}`\n"
     )
 
     await update.message.reply_text(msg, parse_mode="Markdown")
@@ -168,8 +173,8 @@ async def key_cmd(update, context):
     user = update.effective_user
     if not context.args:
         return await update.message.reply_text("Usage: /key <KEY>")
-
     key = context.args[0]
+
     data = load_keys()
     info = data["keys"].get(key)
     if not info:
@@ -211,7 +216,46 @@ async def mytime_cmd(update, context):
         f"⏳ Remaining: {d}d {h}h {m}m"
     )
 
-# ---------------- FILE GENERATION ----------------
+# ---------------- /revoke ----------------
+async def revoke_cmd(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Forbidden")
+    if not context.args:
+        return await update.message.reply_text("Usage: /revoke <KEY>")
+    k = context.args[0]
+
+    data = load_keys()
+    info = data["keys"].pop(k, None)
+    if info:
+        uid = str(info.get("owner"))
+        if uid in data["users"]:
+            data["users"].pop(uid)
+        save_keys(data)
+        await update.message.reply_text(f"Revoked: {k}")
+    else:
+        await update.message.reply_text("Not found.")
+
+# ---------------- /broadcast ----------------
+async def broadcast_cmd(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Forbidden")
+    if not context.args:
+        return update.message.reply_text("Usage: /broadcast <message>")
+
+    msg = " ".join(context.args)
+    data = load_keys()
+
+    count = 0
+    for uid in data["users"]:
+        try:
+            await context.bot.send_message(uid, f"📢 Owner Notice:\n{msg}")
+            count += 1
+        except:
+            pass
+
+    await update.message.reply_text(f"Sent to {count} users.")
+
+# ---------------- MAIN GENERATOR ----------------
 FILE_MAP = {
     "valorant": FILES_DIR / "Valorant.txt",
     "roblox": FILES_DIR / "Roblox.txt",
@@ -270,6 +314,7 @@ async def button_callback(update, context):
         return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
     user_cool[user.id] = now
 
+    # Loading message
     msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
     await asyncio.sleep(2)
     await msg.delete()
@@ -282,8 +327,11 @@ async def button_callback(update, context):
     bio.name = f"{choice}.txt"
 
     await q.message.reply_text(
-        f"✨ Generation Complete!\n🗂 Lines: {count}\n🔍 Type: {choice.capitalize()}"
+        "✨ Generation Complete!\n"
+        f"🗂 Lines: {count}\n"
+        f"🔍 Type: {choice.capitalize()}"
     )
+
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
