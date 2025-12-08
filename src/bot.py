@@ -204,8 +204,18 @@ async def key_cmd(update, context):
     data["users"][str(user.id)] = key
     save_keys(data)
 
-    await update.message.reply_text("✅ Premium activated!\nUse /start")
+    premium_msg = (
+        "🎉 *REDEEM KEY SUCCESSFUL*\n\n"
+        "⚡ Enjoy faster processing, priority access, and enhanced limits.\n"
+        "🛡️ You also get smoother performance and reduced cooldown times.\n\n"
+        "🔰 *COMMANDS YOU CAN USE*\n"
+        "• /start – Start the bot and generate accounts\n"
+        "• /mytime – View your license validity\n\n"
+        "👉 You can now use all premium features anytime.\n"
+        "▶️ Type /start to begin your premium experience."
+    )
 
+    await update.message.reply_text(premium_msg, parse_mode="Markdown")
 # ---------------- /mytime ----------------
 async def mytime_cmd(update, context):
     user = update.effective_user
