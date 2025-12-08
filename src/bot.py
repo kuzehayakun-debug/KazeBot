@@ -338,24 +338,15 @@ async def button_callback(update, context):
 # ============================================================
 #              AUTO SEND EVERY 10 MINUTES
 # ============================================================
-async def auto_hello_task(app):
-    TARGET_CHAT = ADMIN_CHAT_ID
-
-    while True:
-        try:
-            await app.bot.send_message(TARGET_CHAT, "Hello pogi 😎")
-        except Exception as e:
-            print("Auto-send error:", e)
-
-        await asyncio.sleep(600)  # 10 minutes
+def keep_alive():
+    port = int(os.environ.get("PORT", 10000))
+    with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
+        httpd.serve_forever()
 
 
-# ====== START AUTO TASK AFTER BOT INITIALIZES ======
-async def start_auto_tasks(app):
-    app.create_task(auto_hello_task(app))
-
+# ---------------- RUN BOT ----------------
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).post_init(start_auto_tasks).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
@@ -367,3 +358,6 @@ def main():
 
     print("BOT RUNNING on Render...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
