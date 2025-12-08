@@ -333,29 +333,31 @@ async def button_callback(update, context):
     await asyncio.sleep(2)
     await msg.delete()
 
+    # ===== FIXED INDENTATION DITO =====
     content, count = extract_lines(FILE_MAP[choice], 100)
-if count == 0:
-    return await q.message.reply_text("⚠️ No more lines.")
+    if count == 0:
+        return await q.message.reply_text("⚠️ No more lines.")
 
-bio = io.BytesIO(content.encode())
-bio.name = f"{choice}.txt"
+    bio = io.BytesIO(content.encode())
+    bio.name = f"{choice}.txt"
 
-caption = (
-    "🎉 GENERATION COMPLETED!\n\n"
-    f"📁 Target: {choice}\n"
-    f"📈 Lines: {count}\n"
-    "🧹 Duplicates: Removed\n"
-    f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-    "🤖 Powered by @KAZEHAYAMODZ\n"
-    "💎 Thank you for using premium service!"
-)
+    caption = (
+        "🎉 GENERATION COMPLETED!\n\n"
+        f"📁 Target: {choice}\n"
+        f"📈 Lines: {count}\n"
+        "🧹 Duplicates: Removed\n"
+        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+        "🤖 Powered by @KAZEHAYAMODZ\n"
+        "💎 Thank you for using premium service!"
+    )
 
-await q.message.reply_document(
-    document=bio,
-    filename=f"{choice}.txt",
-    caption=caption,
-    parse_mode="Markdown"
-)
+    await q.message.reply_document(
+        document=bio,
+        filename=f"{choice}.txt",
+        caption=caption,
+        parse_mode="Markdown"
+    )
+
 
 # ---------------- RUN BOT ----------------
 def main():
@@ -371,6 +373,7 @@ def main():
 
     print("BOT RUNNING on Render...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     keep_alive()
