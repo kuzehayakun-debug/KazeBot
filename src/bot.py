@@ -344,10 +344,9 @@ caption = (
     "🎉 GENERATION COMPLETED!\n\n"
     f"📁 Target: {choice}\n"
     f"📈 Lines: {count}\n"
-    "🎨 Format: User:Pass\n"
     "🧹 Duplicates: Removed\n"
     f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-    "🤖 Powered by @Chayxbot\n"
+    "🤖 Powered by @KAZEHAYAMODZ\n"
     "💎 Thank you for using premium service!"
 )
 
