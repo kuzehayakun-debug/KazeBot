@@ -1,3 +1,8 @@
+from pathlib import Path
+import secrets
+import io
+import json
+import time
 import asyncio
 import os
 import threading
@@ -6,6 +11,18 @@ from http.server import SimpleHTTPRequestHandler
 import socketserver
 
 from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InputFile,
+)
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -73,8 +90,8 @@ async def is_user_authorized(uid):
     exp = info.get("expires_at")
     if exp is None: return True
     return time.time() <= exp
-    
-# ---------- Ibalik imong tinuod nga commands dinhi ----------
+
+# ---------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     
@@ -92,29 +109,243 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "━━━━━━━━━━━━━━━━━━━━━━"
         )
         return
-        
-# Ibalik imong ubang functions (genkey, key, revoke, mytime, broadcast, etc.)
-# Example placeholders lang ni para dili mag-error:
-async def genkey_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Genkey command")
 
-async def key_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Key command")
+    keyboard = [
+        [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+         InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
 
-async def revoke_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Revoke command")
+        [InlineKeyboardButton("✨ CODM", callback_data="codm"),
+         InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire")],
 
-async def mytime_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Mytime command")
+        [InlineKeyboardButton("🔰 Facebook", callback_data="facebook"),
+         InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
 
-async def broadcast_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Broadcast command")
+        [InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
+         InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text("Button clicked!")
-# ------------------------------------------------------------
+        [InlineKeyboardButton("♨️ Bloodstrike", callback_data="bloodstrike"),
+         InlineKeyboardButton("🎲 Random", callback_data="random")],
+
+        [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
+    ]
+
+    intro = ASSETS_DIR / "Telegram.mp4"
+    if intro.exists():
+        await update.message.reply_video(
+            video=FSInputFile(intro),
+            caption="✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        await update.message.reply_text(
+            "✨ Select an account type:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+
+# ---------------- /genkey ----------------
+async def genkey_cmd(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Forbidden")
+
+    duration = context.args[0] if context.args else "1d"
+    expires = parse_duration(duration)
+    data = load_keys()
+
+    k = make_key(8)
+    exp_time = None if expires is None else time.time() + expires
+
+    data["keys"][k] = {
+        "used": False,
+        "owner": None,
+        "created_by": ADMIN_CHAT_ID,
+        "created_at": time.time(),
+        "expires_at": exp_time,
+    }
+    save_keys(data)
+
+    exp_disp = "Lifetime" if exp_time is None else PH_TIME()
+
+    msg = (
+        "━━━━━━━━━━━━━━━━━━\n"
+        "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        f"🔑 𝐊𝐞𝐲: `{k}`\n"
+        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
+        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
+        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
+        "2️⃣ Click start or /start\n"
+        "3️⃣ /key (your key)\n"
+        f"4️⃣ Example: /key `{k}`\n"
+    )
+
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+# ---------------- /key ----------------
+async def key_cmd(update, context):
+    user = update.effective_user
+    if not context.args:
+        return await update.message.reply_text("Usage: /key <KEY>")
+    key = context.args[0]
+
+    data = load_keys()
+    info = data["keys"].get(key)
+    if not info:
+        return await update.message.reply_text("❌ Invalid key.")
+    if info["used"] and info["owner"] != user.id:
+        return await update.message.reply_text("❌ Already used.")
+    exp = info.get("expires_at")
+    if exp and time.time() > exp:
+        return await update.message.reply_text("⏰ Key expired.")
+
+    info["used"] = True
+    info["owner"] = user.id
+    data["users"][str(user.id)] = key
+    save_keys(data)
+
+    await update.message.reply_text("✅ Premium activated!\nUse /start")
+
+# ---------------- /mytime ----------------
+async def mytime_cmd(update, context):
+    user = update.effective_user
+    data = load_keys()
+    kid = data["users"].get(str(user.id))
+    if not kid:
+        return await update.message.reply_text("❌ No key.")
+    info = data["keys"].get(kid)
+    exp = info.get("expires_at")
+
+    if exp is None:
+        return await update.message.reply_text("♾️ Lifetime key.")
+    rem = int(exp - time.time())
+    if rem <= 0:
+        return await update.message.reply_text("⛔ Expired.")
+
+    d = rem // 86400
+    h = (rem % 86400) // 3600
+    m = (rem % 3600) // 60
+
+    await update.message.reply_text(
+        f"⏳ Remaining: {d}d {h}h {m}m"
+    )
+
+# ---------------- /revoke ----------------
+async def revoke_cmd(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Forbidden")
+    if not context.args:
+        return await update.message.reply_text("Usage: /revoke <KEY>")
+    k = context.args[0]
+
+    data = load_keys()
+    info = data["keys"].pop(k, None)
+    if info:
+        uid = str(info.get("owner"))
+        if uid in data["users"]:
+            data["users"].pop(uid)
+        save_keys(data)
+        await update.message.reply_text(f"Revoked: {k}")
+    else:
+        await update.message.reply_text("Not found.")
+
+# ---------------- /broadcast ----------------
+async def broadcast_cmd(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Forbidden")
+    if not context.args:
+        return update.message.reply_text("Usage: /broadcast <message>")
+
+    msg = " ".join(context.args)
+    data = load_keys()
+
+    count = 0
+    for uid in data["users"]:
+        try:
+            await context.bot.send_message(uid, f"📢 Owner Notice:\n{msg}")
+            count += 1
+        except:
+            pass
+
+    await update.message.reply_text(f"Sent to {count} users.")
+
+# ---------------- MAIN GENERATOR ----------------
+FILE_MAP = {
+    "valorant": FILES_DIR / "Valorant.txt",
+    "roblox": FILES_DIR / "Roblox.txt",
+    "codm": FILES_DIR / "CODM.txt",
+    "crossfire": FILES_DIR / "Crossfire.txt",
+    "facebook": FILES_DIR / "Facebook.txt",
+    "gmail": FILES_DIR / "Gmail.txt",
+    "mtacc": FILES_DIR / "Mtacc.txt",
+    "gaslite": FILES_DIR / "gaslite.txt",
+    "bloodstrike": FILES_DIR / "Bloodstrike.txt",
+    "random": FILES_DIR / "Random.txt",
+    "100082": FILES_DIR / "100082.txt",
+}
+
+user_cool = {}
+COOLDOWN = 15
+
+def extract_lines(path, n=100):
+    if not path.exists(): return "", 0
+    lines = path.read_text(errors="ignore").splitlines()
+    if not lines: return "", 0
+
+    take = lines[:n]
+    remain = lines[n:]
+
+    path.write_text("\n".join(remain))
+    return "\n".join(take), len(take)
+
+async def send_alert(bot, user, typ, count):
+    try:
+        await bot.send_message(
+            ADMIN_CHAT_ID,
+            f"📢 New Generation:\n"
+            f"User: {user.first_name} ({user.id})\n"
+            f"Type: {typ}\n"
+            f"Lines: {count}\n"
+            f"Time: {PH_TIME()}",
+        )
+    except:
+        pass
+
+async def button_callback(update, context):
+    q = update.callback_query
+    await q.answer()
+    user = q.from_user
+    choice = q.data.lower()
+
+    if not await is_user_authorized(user.id):
+        return await q.message.reply_text("❌ Not authorized.")
+
+    if choice not in FILE_MAP:
+        return await q.message.reply_text("Invalid option.")
+
+    now = time.time()
+    if now - user_cool.get(user.id, 0) < COOLDOWN:
+        return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
+    user_cool[user.id] = now
+
+    # Loading message
+    msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
+    await asyncio.sleep(2)
+    await msg.delete()
+
+    content, count = extract_lines(FILE_MAP[choice], 100)
+    if count == 0:
+        return await q.message.reply_text("⚠️ No more lines.")
+
+    bio = io.BytesIO(content.encode())
+    bio.name = f"{choice}.txt"
+
+    await q.message.reply_text(
+        "✨ Generation Complete!\n"
+        f"🗂 Lines: {count}\n"
+        f"🔍 Type: {choice.capitalize()}"
+    )
+
+    await q.message.reply_document(bio)
+    await send_alert(context.bot, user, choice, count)
 
 # =============== AUTO SEND EVERY 10 MINUTES ===============
 async def auto_hello_task(app):
