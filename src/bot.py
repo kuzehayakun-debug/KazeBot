@@ -335,29 +335,42 @@ async def button_callback(update, context):
     await q.message.reply_document(bio)
     await send_alert(context.bot, user, choice, count)
 
-# ============================================================
-#              AUTO SEND EVERY 10 MINUTES
-# ============================================================
+# ============================================
+# KEEP ALIVE WEB SERVER
+# ============================================
 def keep_alive():
     port = int(os.environ.get("PORT", 10000))
     with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
+        print(f"[KEEP ALIVE] Running on port {port}")
         httpd.serve_forever()
 
-
-# ---------------- RUN BOT ----------------
-def main():
+# ============================================
+# MAIN BOT STARTER
+# ============================================
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # handlers
     app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
+    app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CallbackQueryHandler(button_callback))
 
-    print("BOT RUNNING on Render...")
-    app.run_polling()
+    # Start keep-alive task
+    asyncio.create_task(auto_task(app))
 
+    print("BOT RUNNING on Render...")
+    
+    await app.initialize()
+    await app.start()
+    await asyncio.Event().wait()
+
+# ============================================
+# ENTRY POINT
+# ============================================
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=keep_alive, daemon=True).start()
+    asyncio.run(main())
