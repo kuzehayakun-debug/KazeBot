@@ -346,34 +346,48 @@ def keep_alive():
         httpd.serve_forever()
 
 # ============================================
+# KEEP ALIVE WEB SERVER (REQUIRED BY RENDER)
+# ============================================
+def keep_alive():
+    port = int(os.environ.get("PORT", 10000))
+    try:
+        with socketserver.TCPServer(("", port), SimpleHTTPRequestHandler) as httpd:
+            print(f"[KEEP ALIVE] Running on port {port}")
+            httpd.serve_forever()
+    except Exception as e:
+        print("[KEEP ALIVE ERROR]", e)
+
+
+# ============================================
 # MAIN BOT STARTER
 # ============================================
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # 🔹 ALL COMMAND HANDLERS
+    # REGISTER ALL COMMANDS
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
-
-    # 🔹 CALLBACK BUTTONS (Dapat CLOSED properly)
+    
+    # BUTTON HANDLER
     app.add_handler(CallbackQueryHandler(button_callback))
 
     print("BOT RUNNING on Render...")
 
-    # 🔹 REQUIRED STEPS FOR RUNNING
     await app.initialize()
     await app.start()
 
-    # 🔹 Para hindi mamatay ang bot
+    # KEEP RUNNING FOREVER
     await asyncio.Event().wait()
+
 
 # ============================================
 # ENTRY POINT
 # ============================================
 if __name__ == "__main__":
+    import threading
     threading.Thread(target=keep_alive, daemon=True).start()
     asyncio.run(main())
