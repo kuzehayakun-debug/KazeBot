@@ -497,40 +497,40 @@ async def menu_callback(update, context):
 
     # --- GENERATE ACCOUNTS MENU ---
     if data == "menu_generate":
-        gen_keys = [
-            [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
-             InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+    gen_keys = [
+        [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+         InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
 
-            [InlineKeyboardButton("✨ CODM", callback_data="codm"),
-             InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
+        [InlineKeyboardButton("✨ CODM", callback_data="codm"),
+         InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
 
-            [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
-             InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
+        [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+         InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
 
-            [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
-             InlineKeyboardButton("🎲 Random", callback_data="random")],
+        [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
+         InlineKeyboardButton("🎲 Random", callback_data="random")],
 
-            [InlineKeyboardButton("📌 100082", callback_data="100082")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
-        ]
+        [InlineKeyboardButton("📌 100082", callback_data="100082")],
+        [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+    ]
 
-        return await q.edit_message_text(
-    "⚡ *ACCOUNT GENERATION CENTER*\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-    "Welcome to the *Premium Account Generator Hub!* 🔥\n"
-    "Here, you can instantly generate *fresh*, *filtered*, and *unused* accounts from multiple platforms.\n\n"
-    "🚀 *WHAT YOU CAN EXPECT:*\n"
-    "• Ultra–fast generation speed\n"
-    "• Cleaned & duplicate–free combos\n"
-    "• Stable performance even under heavy usage\n"
-    "• Updated databases for maximum hit rate\n"
-    "• Easy to copy, paste, and use\n\n"
-    "📂 *SUPPORTED CATEGORIES:*\n"
-    "Choose any platform below. Each category pulls NEW lines directly from the database.\n\n"
-    "👇 *SELECT AN ACCOUNT TYPE TO BEGIN:*",
-    parse_mode="Markdown",
-    reply_markup=InlineKeyboardMarkup(gen_keys)
-        )
+    return await q.edit_message_text(
+        "⚡ *ACCOUNT GENERATION CENTER*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Welcome to the *Premium Account Generator Hub!* 🔥\n"
+        "Here, you can instantly generate *fresh*, *filtered*, and *unused* accounts from multiple platforms.\n\n"
+        "🚀 *WHAT YOU CAN EXPECT:*\n"
+        "• Ultra–fast generation speed\n"
+        "• Cleaned & duplicate–free combos\n"
+        "• Stable performance even under heavy usage\n"
+        "• Updated databases for maximum hit rate\n"
+        "• Easy to copy, paste, and use\n\n"
+        "📂 *SUPPORTED CATEGORIES:*\n"
+        "Choose any platform below. Each category pulls NEW lines directly from the database.\n\n"
+        "👇 *SELECT AN ACCOUNT TYPE TO BEGIN:*",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(gen_keys)
+    )
 
     # --- TOOLS HUB MENU ---
     if data == "menu_tools":
