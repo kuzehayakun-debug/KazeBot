@@ -310,17 +310,20 @@ def extract_lines(path, n=100):
 
 async def send_alert(bot, user, typ, count):
     try:
+        username = f"@{user.username}" if user.username else "No Username"
         await bot.send_message(
             ADMIN_CHAT_ID,
-            f"📢 New Generation:\n"
-            f"🔰User: {user.first_name} ({user.id})\n"
-            f"📁Type: {typ}\n"
+            f"📢New Generation:\n"
+            f"🔰User: {user.first_name} {user.last_name or ''}\n"
+            f"🔥Username: {username}\n"
+            f"🔑ID: {user.id}\n"
+            f"⚡Type: {typ.upper()}\n"
             f"📊Lines: {count}\n"
-            f"⌛Time: {PH_TIME()}",
+            f"⌛Time: {PH_TIME()}"
         )
     except:
         pass
-
+        
 async def button_callback(update, context):
     q = update.callback_query
     await q.answer()
