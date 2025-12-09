@@ -69,6 +69,14 @@ def save_keys(data):
     KEYS_FILE.write_text(json.dumps(data, indent=2))
 
 # make random key
+def generate_full_key(length=8):
+    return "Kaze-" + make_key(length)
+
+def get_key(manual_key=None):
+    if manual_key:
+        return manual_key.strip()
+    return generate_full_key()
+    
 def make_key(length=8):
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
     return "".join(secrets.choice(chars) for _ in range(length))
@@ -353,7 +361,7 @@ async def button_callback(update, context):
 
     bio = io.BytesIO(content.encode())
     bio.name = f"{choice}.txt"
-
+    
     caption = (
         "🎉 GENERATION COMPLETED!\n\n"
         f"📁 Target: {choice}\n"
