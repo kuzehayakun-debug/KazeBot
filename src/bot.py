@@ -678,17 +678,18 @@ def main():
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
 
-    # ----- Menu Buttons -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^back_"))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^tool_"))
+    # ----- Menus (Start menu, Tools, Generate, Channel) -----
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|back_|tool_)"))
 
     # ----- Generator buttons (valorant, codm, facebook, etc) -----
-    app.add_handler(CallbackQueryHandler(menu_callback))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(" + "|".join(FILE_MAP.keys()) + ")$"))
+
+    # ----- File upload for tools -----
     app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     keep_alive()
