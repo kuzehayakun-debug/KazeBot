@@ -534,7 +534,7 @@ async def menu_callback(update, context):
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
         ])
     )
 
