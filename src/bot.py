@@ -10,6 +10,14 @@ from flask import Flask
 from flask import Flask
 from threading import Thread
 import os
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,        # ← ADD THIS
+    ContextTypes,
+    filters                # ← AND MAKE SURE THIS IS PRESENT
+)
 
 app_web = Flask('')
 
