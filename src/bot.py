@@ -476,11 +476,35 @@ async def send_alert(bot, user, typ, count):
     except:
         pass
 
-async def button_callback(update, context):
+async def menu_callback(update, context):
     q = update.callback_query
     await q.answer()
-    user = q.from_user
-    choice = q.data.lower()
+
+    data = q.data
+
+    if data == "menu_accounts":
+        # show accounts menu
+        keyboard = [
+            [InlineKeyboardButton("CODM", callback_data="codm")],
+            [InlineKeyboardButton("Roblox", callback_data="roblox")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_main")]
+        ]
+        await q.edit_message_text(
+            "⚡ Select what you want to generate:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "menu_tools":
+        keyboard = [
+            [InlineKeyboardButton("TXT Divider", callback_data="tool_divider")],
+            [InlineKeyboardButton("URL Cleaner", callback_data="tool_urlclean")],
+            [InlineKeyboardButton("Duplicate Remover", callback_data="tool_dupe")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_main")]
+        ]
+        await q.edit_message_text(
+            "🛠 Available Tools:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
 
     if not await is_user_authorized(user.id):
         return await q.message.reply_text("❌ Not authorized.")
