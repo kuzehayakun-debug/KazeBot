@@ -520,45 +520,71 @@ async def menu_callback(update, context):
         )
 
     # --- TOOLS HUB MENU ---
-    if data == "menu_tools":
-        tools = [
-            [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
-            [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
-            [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
-            [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
-        ]
+    # --- TOOLS HUB MENU ---
+if data == "menu_tools":
+    tools = [
+        [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
+        [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
+        [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
+        [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
+        [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+    ]
 
-        return await q.edit_message_text(
-            "🛠 *Essential Tools Hub*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(tools)
+    return await q.edit_message_text(
+        "🛠 *Essential Tools Hub*",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(tools)
+    )
+
+# --- CHANNEL MENU ---
+if data == "menu_channel":
+    return await q.edit_message_text(
+        "📢 Tap the button below to join:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
+        ])
+    )
+
+# --- BACK TO HOME ---
+if data == "back_to_home":
+    home = [
+        [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+        [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+        [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
+    ]
+    return await q.edit_message_text(
+        "✨ *Welcome back!* Choose an option:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(home)
+    )
+
+# --- TOOL: TXT Divider ---
+if data == "tool_divider":
+    context.user_data["tool_mode"] = "divider"
+    context.user_data["await_lines"] = True
+    return await q.edit_message_text(
+        "📄 TXT Divider selected.\n\n➡ Enter number of lines per file:",
+        parse_mode="Markdown"
+    )
+
+# --- TOOL: Duplicate Remover ---
+if data == "tool_dupe":
+    context.user_data["tool_mode"] = "dupe"
+    return await q.edit_message_text(
+        "🧹 Duplicate Remover selected.\nSend TXT file now.",
+        parse_mode="Markdown"
+    )
+
+# --- TOOL: URL Cleaner ---
+if data == "tool_url":
+    context.user_data["tool_mode"] = "url"
+    return await q.edit_message_text(
+        "🔗 URL Cleaner selected.\nSend TXT file now.",
+        parse_mode="Markdown"
         )
-
-    # --- CHANNEL MENU ---
-    if data == "menu_channel":
-        return await q.edit_message_text(
-            "📢 Tap the button below to join:",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
-                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
-            ])
-        )
-
-    # --- BACK TO HOME ---
-    if data == "back_to_home":
-        home = [
-            [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
-            [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
-            [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
-        ]
-        return await q.edit_message_text(
-            "✨ *Welcome back!* Choose an option:",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(home)
-        )
-
+    
     # --- TOOL: TXT Divider ---
     if data == "tool_divider":
         context.user_data["tool_mode"] = "divider"
@@ -627,95 +653,87 @@ async def menu_callback(update, context):
         )
         
 # ---------------- FILE HANDLER FOR TOOLS ----------------
-async def number_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check if waiting for input
-    if not context.user_data.get("await_lines"):
-        return  # ignore random text
-
-    # Validate number
-    try:
-        lines = int(update.message.text)
-        if lines <= 0:
-            raise ValueError
-    except:
-        return await update.message.reply_text("❌ Please enter a valid number.")
-
-    # Save number
-    context.user_data["lines_per_file"] = lines
-    context.user_data["await_lines"] = False
-
-    return await update.message.reply_text(
-        f"✅ Divider set to *{lines} lines per file*.\n\n📄 Now send your TXT file.",
-        parse_mode="Markdown"
-    )    
-
-    # ============================
-    # NEED DOCUMENT FILE?
-    # ============================
-    if not update.message.document:
-        return await update.message.reply_text("❗ Please send a TXT file.")
+async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tool = context.user_data.get("tool_mode")
 
     file_id = update.message.document.file_id
     file = await context.bot.get_file(file_id)
     content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
 
-    # ============================
-    # CUSTOM DIVIDER
-    # ============================
+    # ======================================
+    # CUSTOM TXT DIVIDER
+    # ======================================
     if tool == "divider":
-        lines_per = context.user_data.get("lines_per_file")
+        lines_per_file = context.user_data.get("lines_per_file")
 
-        if not lines_per:
+        if not lines_per_file:
             return await update.message.reply_text("❌ Please enter number of lines first.")
 
         lines = content.splitlines()
-        parts = [lines[i:i + lines_per] for i in range(0, len(lines), lines_per)]
+
+        parts = [
+            lines[i:i + lines_per_file]
+            for i in range(0, len(lines), lines_per_file)
+        ]
 
         for idx, part in enumerate(parts, 1):
-            data = "\n".join(part)
-            bio = io.BytesIO(data.encode())
+            part_data = "\n".join(part)
+            bio = io.BytesIO(part_data.encode())
             bio.name = f"Part{idx}.txt"
 
-            await update.message.reply_document(bio, caption=f"📁 Part {idx}")
-
+            await update.message.reply_document(
+                document=bio,
+                caption=f"📁 Part {idx}"
+            )
         return
 
-
-    # ============================
+    # ======================================
     # DUPLICATE REMOVER
-    # ============================
+    # ======================================
     if tool == "dupe":
         lines = content.splitlines()
         unique = list(dict.fromkeys(lines))
         result = "\n".join(unique)
 
-        bio = io.BytesIO(result.encode())
-        bio.name = "Cleaned.txt"
-
+        bio = io.BytesIO(result.encode()); bio.name = "Cleaned.txt"
         await update.message.reply_document(bio)
         return
 
-
-    # ============================
+    # ======================================
     # URL CLEANER
-    # ============================
+    # ======================================
     if tool == "url":
         import re
         cleaned = re.sub(r"http\S+", "", content)
-
-        bio = io.BytesIO(cleaned.encode())
-        bio.name = "URL_Cleaned.txt"
-
+        bio = io.BytesIO(cleaned.encode()); bio.name = "URL_Cleaned.txt"
         await update.message.reply_document(bio)
         return
 
     await update.message.reply_text("❗ Please choose a tool first.")
+
+# ================= NUMBER HANDLER (for custom divider) ===================
+async def number_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("await_lines"):
+        try:
+            num = int(update.message.text)
+            if num <= 0:
+                return await update.message.reply_text("⚠️ Number must be greater than 0.")
+        except:
+            return await update.message.reply_text("❌ Please enter a valid number.")
+
+        context.user_data["lines_per_file"] = num
+        context.user_data["await_lines"] = False
+
+        return await update.message.reply_text(
+            f"✅ Divider set to *{num} lines per file*.\nNow send your TXT file.",
+            parse_mode="Markdown"
+        )
     
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # ----- Commands -----
+    # Commands
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
@@ -724,13 +742,12 @@ def main():
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
 
-    # ----- ALL MENU BUTTONS -----
-    app.add_handler(CallbackQueryHandler(menu_callback))
+    # Menus
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|back_|tool_)"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(" + "|".join(FILE_MAP.keys()) + ")$"))
 
-    # ----- FILE UPLOAD (TXT Tools) -----
+    # Files + Text
     app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
-
-    # ----- NUMBER INPUT (for Divider custom lines) -----
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, number_handler))
 
     print("BOT RUNNING on Render...")
