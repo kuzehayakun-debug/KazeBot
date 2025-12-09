@@ -104,40 +104,98 @@ async def is_user_authorized(uid):
 # ---------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    
+
     if not await is_user_authorized(user.id):
-        await update.message.reply_text(
+        return await update.message.reply_text(
             f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
             "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
-            "• Before you can access the generator,\n"
-            "• You must enter a valid activation key.\n\n"
-            "💠 𝙊𝙉𝙀 𝙆𝙀𝙔 = 𝙇𝙄𝙁𝙀𝙏𝙄𝙈𝙀 𝘼𝘾𝘾𝙀𝙎𝙎\n"
-            "✨ Fast activation\n"
-            "✨ Secure verification\n\n"
-            "🛒 Buy key here: @KAZEHAYAMODZ\n"
-            "━━━━━━━━━━━━━━━━━━━━━━"
+            "Before you can use the generator, please enter your premium key.\n\n"
+            "🛒 Buy key: @KAZEHAYAMODZ"
         )
-        return
 
     keyboard = [
-        [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
-         InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
-
-        [InlineKeyboardButton("✨ CODM", callback_data="codm"),
-         InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire")],
-
-        [InlineKeyboardButton("🔰 Facebook", callback_data="facebook"),
-         InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
-
-        [InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
-         InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
-
-        [InlineKeyboardButton("♨️ Bloodstrike", callback_data="bloodstrike"),
-         InlineKeyboardButton("🎲 Random", callback_data="random")],
-
-        [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
+        [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+        [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+        [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
     ]
+
+    await update.message.reply_text(
+        "✨ *Welcome back!* Choose an option below:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+    async def menu_callback(update, context):
+    q = update.callback_query
+    await q.answer()
+    user = q.from_user
+    data = q.data
+
+    # --- GENERATE ACCOUNTS MENU ---
+    if data == "menu_generate":
+        gen_keys = [
+            [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+             InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+
+            [InlineKeyboardButton("✨ CODM", callback_data="codm"),
+             InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
+
+            [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+             InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
+
+            [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
+             InlineKeyboardButton("🎲 Random", callback_data="random")],
+
+            [InlineKeyboardButton("📌 100082", callback_data="100082")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+        ]
+
+        return await q.edit_message_text(
+            "⚡ *Select account to generate:*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(gen_keys)
+        )
+
+    # --- TOOLS HUB MENU ---
+    if data == "menu_tools":
+        tools = [
+            [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
+            [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
+            [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
+            [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+        ]
+
+        return await q.edit_message_text(
+            "🛠 *Essential Tools Hub*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(tools)
+        )
+
+    # --- CHANNEL ---
+    if data == "menu_channel":
+        return await q.edit_message_text(
+            "📢 *Join our official channel:*\n"
+            "👉 https://t.me/+wkXVYyqiRYplZjk1",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
+            ])
+        )
+
+    # --- BACK BUTTON ---
+    if data == "back_to_home":
+        home = [
+            [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+            [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+            [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
+        ]
+        return await q.edit_message_text(
+            "✨ *Welcome back!* Choose an option:",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(home)
+        )
 
     intro = ASSETS_DIR / "Telegram.mp4"
     if intro.exists():
