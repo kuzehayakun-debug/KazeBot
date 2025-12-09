@@ -303,10 +303,10 @@ async def send_alert(bot, user, typ, count):
         await bot.send_message(
             ADMIN_CHAT_ID,
             f"📢 New Generation:\n"
-            f"User: {user.first_name} ({user.id})\n"
-            f"Type: {typ}\n"
-            f"Lines: {count}\n"
-            f"Time: {PH_TIME()}",
+            f"🔰User: {user.first_name} ({user.id})\n"
+            f"📁Type: {typ}\n"
+            f"📊Lines: {count}\n"
+            f"⌛Time: {PH_TIME()}",
         )
     except:
         pass
