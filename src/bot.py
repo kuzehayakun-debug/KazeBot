@@ -584,47 +584,47 @@ if data == "tool_url":
         parse_mode="Markdown"
     )
 
-    # --- GENERATION HANDLER ---
-    if data in FILE_MAP:
-        choice = data
+# --- GENERATION HANDLER ---
+if data in FILE_MAP:
+    choice = data
 
-        if not await is_user_authorized(user.id):
-            return await q.message.reply_text("❌ Not authorized.")
+    if not await is_user_authorized(user.id):
+        return await q.message.reply_text("❌ Not authorized.")
 
-        now = time.time()
-        if now - user_cool.get(user.id, 0) < COOLDOWN:
-            return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s.")
-        user_cool[user.id] = now
+    now = time.time()
+    if now - user_cool.get(user.id, 0) < COOLDOWN:
+        return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s.")
+    user_cool[user.id] = now
 
-        msg = await q.message.reply_text(f"🔥 Searching {choice} database…")
-        await asyncio.sleep(1.5)
-        await msg.delete()
+    msg = await q.message.reply_text(f"🔥 Searching {choice} database…")
+    await asyncio.sleep(1.5)
+    await msg.delete()
 
-        content, count = extract_lines(FILE_MAP[choice], 100)
+    content, count = extract_lines(FILE_MAP[choice], 100)
 
-        await send_alert(context.bot, user, choice, count)
+    await send_alert(context.bot, user, choice, count)
 
-        if count == 0:
-            return await q.message.reply_text("⚠️ No more lines.")
+    if count == 0:
+        return await q.message.reply_text("⚠️ No more lines.")
 
-        bio = io.BytesIO(content.encode())
-        bio.name = f"{choice}.txt"
+    bio = io.BytesIO(content.encode())
+    bio.name = f"{choice}.txt"
 
-        caption = (
-            "🎉 GENERATION COMPLETED!\n\n"
-            f"📁 Target: {choice}\n"
-            f"📊 Lines: {count}\n"
-            "🧹 Duplicates: Removed\n"
-            f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-            "🤖 Powered by @KAZEHAYAMODZ\n"
-            "💎 Thank you for using premium service!"
-        )
+    caption = (
+        "🎉 GENERATION COMPLETED!\n\n"
+        f"📁 Target: {choice}\n"
+        f"📊 Lines: {count}\n"
+        "🧹 Duplicates: Removed\n"
+        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+        "🤖 Powered by @KAZEHAYAMODZ\n"
+        "💎 Thank you for using premium service!"
+    )
 
-        return await q.message.reply_document(
-            bio,
-            filename=f"{choice}.txt",
-            caption=caption
-        )
+    return await q.message.reply_document(
+        bio,
+        filename=f"{choice}.txt",
+        caption=caption
+    )
         
 # ---------------- FILE HANDLER FOR TOOLS ----------------
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
