@@ -604,21 +604,15 @@ def main():
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
-    app.add_handler(CommandHandler("generate", generate_cmd))  # ← ADD THIS
+    app.add_handler(CommandHandler("generate", generate_cmd))
 
-    # ----- Menu Buttons (Tools / Generate / Channel) -----
+    # ----- Menu Buttons -----
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^back_"))
-
-    # ----- Tools Buttons (txt divider / url cleaner / duplicate remover) -----
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^tool_"))
 
-    # ----- Generator Buttons (valorant, codm, roblox etc) -----
-    app.add_handler(CallbackQueryHandler(button_callback))
+    # ----- Generator buttons (valorant, codm, facebook, etc) -----
+    app.add_handler(CallbackQueryHandler(menu_callback))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
-
-if __name__ == "__main__":
-    keep_alive()
-    asyncio.run(main())
