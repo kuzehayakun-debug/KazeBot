@@ -160,10 +160,10 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     async def menu_callback(update, context):
-    q = update.callback_query
-    await q.answer()
-    user = q.from_user
-    data = q.data
+       q = update.callback_query
+       await q.answer()
+       user = q.from_user
+       data = q.data
 
     # --- GENERATE ACCOUNTS MENU ---
     if data == "menu_generate":
