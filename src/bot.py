@@ -537,7 +537,7 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
         ]
         return await q.edit_message_text(
-            "✨ *Welcome back!* Choose an option:",
+            "✨ *Main Menu* — Select an option below:",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(home)
         )
@@ -606,7 +606,6 @@ def main():
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
-    app.add_handler(CommandHandler("tools", tools_cmd))
 
     # ----- Menu Buttons -----
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
