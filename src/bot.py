@@ -204,8 +204,18 @@ async def key_cmd(update, context):
     data["users"][str(user.id)] = key
     save_keys(data)
 
-    await update.message.reply_text("✅ Premium activated!\nUse /start")
+    premium_msg = (
+        "🎉 *REDEEM KEY SUCCESSFUL*\n\n"
+        "⚡ Enjoy faster processing, priority access, and enhanced limits.\n"
+        "🛡️ You also get smoother performance and reduced cooldown times.\n\n"
+        "🔰 *COMMANDS YOU CAN USE*\n"
+        "• /start – Start the bot and generate accounts\n"
+        "• /mytime – View your license validity\n\n"
+        "👉 You can now use all premium features anytime.\n"
+        "▶️ Type /start to begin your premium experience."
+    )
 
+    await update.message.reply_text(premium_msg, parse_mode="Markdown")
 # ---------------- /mytime ----------------
 async def mytime_cmd(update, context):
     user = update.effective_user
@@ -340,15 +350,23 @@ async def button_callback(update, context):
     bio = io.BytesIO(content.encode())
     bio.name = f"{choice}.txt"
 
-    await q.message.reply_text(
-        "✨ Generation Complete!\n"
-        f"🗂 Lines: {count}\n"
-        f"🔍 Type: {choice.capitalize()}"
+    caption = (
+        "🎉 GENERATION COMPLETED!\n\n"
+        f"📁 Target: {choice}\n"
+        f"📈 Lines: {count}\n"
+        "🧹 Duplicates: Removed\n"
+        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+        "🤖 Powered by @KAZEHAYAMODZ\n"
+        "💎 Thank you for using premium service!"
     )
 
-    await q.message.reply_document(bio)
-    await send_alert(context.bot, user, choice, count)
-
+    await q.message.reply_document(
+        document=bio,
+        filename=f"{choice}.txt",
+        caption=caption,
+        parse_mode="Markdown"
+    )
+        
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
