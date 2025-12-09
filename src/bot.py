@@ -520,7 +520,6 @@ async def menu_callback(update, context):
         )
 
     # --- TOOLS HUB MENU ---
-    # --- TOOLS HUB MENU ---
 if data == "menu_tools":
     tools = [
         [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
@@ -583,32 +582,7 @@ if data == "tool_url":
     return await q.edit_message_text(
         "🔗 URL Cleaner selected.\nSend TXT file now.",
         parse_mode="Markdown"
-        )
-    
-    # --- TOOL: TXT Divider ---
-    if data == "tool_divider":
-        context.user_data["tool_mode"] = "divider"
-        context.user_data["await_lines"] = True
-        return await q.edit_message_text(
-            "📄 TXT Divider selected.\n\n➡ Enter number of lines per file:",
-            parse_mode="Markdown"
-        )
-
-    # --- TOOL: Duplicate Remover ---
-    if data == "tool_dupe":
-        context.user_data["tool_mode"] = "dupe"
-        return await q.edit_message_text(
-            "🧹 Duplicate Remover selected.\nSend TXT file now.",
-            parse_mode="Markdown"
-        )
-
-    # --- TOOL: URL Cleaner ---
-    if data == "tool_url":
-        context.user_data["tool_mode"] = "url"
-        return await q.edit_message_text(
-            "🔗 URL Cleaner selected.\nSend TXT file now.",
-            parse_mode="Markdown"
-        )
+    )
 
     # --- GENERATION HANDLER ---
     if data in FILE_MAP:
