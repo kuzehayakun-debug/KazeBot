@@ -476,82 +476,133 @@ async def send_alert(bot, user, typ, count):
     except:
         pass
 
-async def menu_callback(update, context):
+# replace your old menu_callback with this
+async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-
     data = q.data
+    user = q.from_user
 
-    if data == "menu_accounts":
-        # show accounts menu
-        keyboard = [
-            [InlineKeyboardButton("CODM", callback_data="codm")],
-            [InlineKeyboardButton("Roblox", callback_data="roblox")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_main")]
+    # --- MAIN MENU: show Generate / Tools / Channel ---
+    if data == "menu_generate":
+        gen_keys = [
+            [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+             InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+            [InlineKeyboardButton("✨ CODM", callback_data="codm"),
+             InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
+            [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+             InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
+            [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
+             InlineKeyboardButton("🎲 Random", callback_data="random")],
+            [InlineKeyboardButton("📌 100082", callback_data="100082")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
         ]
-        await q.edit_message_text(
-            "⚡ Select what you want to generate:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+        return await q.edit_message_text(
+            "⚡ *Select account to generate:*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(gen_keys)
         )
 
-    elif data == "menu_tools":
-        keyboard = [
-            [InlineKeyboardButton("TXT Divider", callback_data="tool_divider")],
-            [InlineKeyboardButton("URL Cleaner", callback_data="tool_urlclean")],
-            [InlineKeyboardButton("Duplicate Remover", callback_data="tool_dupe")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_main")]
+    # --- TOOLS HUB MENU ---
+    if data == "menu_tools":
+        tools = [
+            [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
+            [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
+            [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
+            [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
         ]
-        await q.edit_message_text(
-            "🛠 Available Tools:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+        return await q.edit_message_text(
+            "🛠 *Essential Tools Hub*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(tools)
         )
 
-    if not await is_user_authorized(user.id):
-        return await q.message.reply_text("❌ Not authorized.")
+    # --- CHANNEL ---
+    if data == "menu_channel":
+        return await q.edit_message_text(
+            "📢 *Join our official channel:*\n"
+            "👉 https://t.me/+wkXVYyqiRYplZjk1",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
+            ])
+        )
 
-    if choice not in FILE_MAP:
-        return await q.message.reply_text("Invalid option.")
+    # --- BACK BUTTON: home menu ---
+    if data == "back_to_home":
+        home = [
+            [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+            [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+            [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
+        ]
+        return await q.edit_message_text(
+            "✨ *Welcome back!* Choose an option:",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(home)
+        )
 
-    now = time.time()
-    if now - user_cool.get(user.id, 0) < COOLDOWN:
-        return await q.message.reply_text(f"⏳ 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 {COOLDOWN}s")
+    # --- TOOLS handlers (simple stub: you can implement actual logic) ---
+    if data == "tool_divider":
+        return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process or use /tool_divide <file> (implement).")
+    if data == "tool_dupe":
+        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend file to process or use /tool_dupe (implement).")
+    if data == "tool_url":
+        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend file or text to clean URLs (implement).")
+    if data == "tool_file":
+        return await q.edit_message_text("📂 File Processor selected.\nSend file to process (implement).")
 
-    user_cool[user.id] = now
+    # --- If data matches a generator choice (valorant/codm/...) then run generation flow ---
+    # Make sure FILE_MAP exists and contains these keys
+    if data in FILE_MAP:
+        choice = data
 
-    # Loading
-    msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
-    await asyncio.sleep(2)
-    await msg.delete()
+        # auth check
+        if not await is_user_authorized(user.id):
+            return await q.message.reply_text("❌ Not authorized.")
 
-    # Extract
-    content, count = extract_lines(FILE_MAP[choice], 100)
+        # cooldown
+        now = time.time()
+        if now - user_cool.get(user.id, 0) < COOLDOWN:
+            return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s")
+        user_cool[user.id] = now
 
-    # 🔥 Alert admin
-    await send_alert(context.bot, user, choice, count)
+        # Loading msg
+        msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
+        await asyncio.sleep(1.5)
+        await msg.delete()
 
-    if count == 0:
-        return await q.message.reply_text("⚠️ No more lines.")
+        # Extract
+        content, count = extract_lines(FILE_MAP[choice], 100)
 
-    # Send file
-    bio = io.BytesIO(content.encode())
-    bio.name = f"{choice}.txt"
+        # Alert admin
+        await send_alert(context.bot, user, choice, count)
 
-    caption = (
-        "🎉 GENERATION COMPLETED!\n\n"
-        f"📁 Target: {choice}\n"
-        f"📊 Lines: {count}\n"
-        "🧹 Duplicates: Removed\n"
-        f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
-        "🤖 Powered by @KAZEHAYAMODZ\n"
-        "💎 Thank you for using premium service!"
-    )
+        if count == 0:
+            return await q.message.reply_text("⚠️ No more lines.")
 
-    await q.message.reply_document(
-        bio,
-        filename=f"{choice}.txt",
-        caption=caption,
-        parse_mode="Markdown"
-    )
+        bio = io.BytesIO(content.encode())
+        bio.name = f"{choice}.txt"
+
+        caption = (
+            "🎉 GENERATION COMPLETED!\n\n"
+            f"📁 Target: {choice}\n"
+            f"📊 Lines: {count}\n"
+            "🧹 Duplicates: Removed\n"
+            f"🕒 Time: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            "🤖 Powered by @KAZEHAYAMODZ\n"
+            "💎 Thank you for using premium service!"
+        )
+
+        return await q.message.reply_document(
+            bio,
+            filename=f"{choice}.txt",
+            caption=caption,
+            parse_mode="Markdown"
+        )
+
+    # --- fallback: unknown callback ---
+    await q.answer("Unknown option.", show_alert=False)
         
 # ---------------- RUN BOT ----------------
 def main():
@@ -564,13 +615,14 @@ def main():
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
+    app.add_handler(CommandHandler("generate", generate_cmd))  # ← ADD THIS
 
     # ----- Menu Buttons (Tools / Generate / Channel) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="menu_"))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="back_"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^back_"))
 
     # ----- Tools Buttons (txt divider / url cleaner / duplicate remover) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="tool_"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^tool_"))
 
     # ----- Generator Buttons (valorant, codm, roblox etc) -----
     app.add_handler(CallbackQueryHandler(button_callback))
