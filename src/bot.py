@@ -566,10 +566,7 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
             [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
         ]
-
-    # --- GENERATE MENU ---
-if data == "menu_generate":
-    return await q.edit_message_text(
+        return await q.edit_message_text(
         "⚡ *ACCOUNT GENERATION CENTER*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
         "Welcome to the *Premium Account Generator Hub!* 🔥\n"
@@ -583,10 +580,10 @@ if data == "menu_generate":
         "📂 *SUPPORTED CATEGORIES:*\n"
         "Choose any platform below. Each category pulls NEW lines directly from the database.\n\n"
         "👇 *SELECT AN ACCOUNT TYPE TO BEGIN:*",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(gen_keys)
-    )
-    
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(home)
+        )
+
     # --- TOOL MESSAGES ---
     if data == "tool_divider":
         return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process.")
