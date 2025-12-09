@@ -101,6 +101,39 @@ async def is_user_authorized(uid):
     if exp is None: return True
     return time.time() <= exp
 
+# ---------------- /generate ----------------
+async def generate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+
+    # Check kung authorized
+    if not await is_user_authorized(user.id):
+        return await update.message.reply_text("❌ You are not authorized. Please redeem a valid key.")
+
+    # Same menu as in /start but generate only
+    keyboard = [
+        [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
+         InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+
+        [InlineKeyboardButton("✨ CODM", callback_data="codm"),
+         InlineKeyboardButton("⚔️ Crossfire", callback_data="crossfire")],
+
+        [InlineKeyboardButton("🔰 Facebook", callback_data="facebook"),
+         InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
+
+        [InlineKeyboardButton("🙈 Mtacc", callback_data="mtacc"),
+         InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
+
+        [InlineKeyboardButton("♨️ Bloodstrike", callback_data="bloodstrike"),
+         InlineKeyboardButton("🎲 Random", callback_data="random")],
+
+        [InlineKeyboardButton("⚡ 100082", callback_data="100082")],
+    ]
+
+    await update.message.reply_text(
+        "✨ Select an account type to generate:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
 # ---------------- /start ----------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -500,12 +533,22 @@ async def button_callback(update, context):
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # ----- Commands -----
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
+
+    # ----- Menu Buttons (Tools / Generate / Channel) -----
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="menu_"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="back_"))
+
+    # ----- Tools Buttons (txt divider / url cleaner / duplicate remover) -----
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="tool_"))
+
+    # ----- Generator Buttons (valorant, codm, roblox etc) -----
     app.add_handler(CallbackQueryHandler(button_callback))
 
     print("BOT RUNNING on Render...")
