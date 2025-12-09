@@ -72,6 +72,13 @@ def save_keys(data):
 def make_key(length=8):
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
     return "".join(secrets.choice(chars) for _ in range(length))
+    def generate_full_key(length=8):
+    return "Kaze-" + make_key(length)
+
+def get_key(manual_key=None):
+    if manual_key:      # kung may custom key
+        return manual_key.strip()
+    return generate_full_key()   # kung walang custom key, random key
 
 def parse_duration(text):
     text = text.lower().strip()
@@ -149,35 +156,53 @@ async def genkey_cmd(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("⛔ Forbidden")
 
-    duration = context.args[0] if context.args else "1d"
-    expires = parse_duration(duration)
+    args = context.args
+
+    # Default
+    manual_key = None
+    duration = "1d"
+
+    if len(args) == 1:
+        if args[0].lower().endswith(("d", "h")) or args[0].lower() in ("life", "lifetime"):
+            duration = args[0]      # 30d, lifetime, 12h etc.
+        else:
+            manual_key = args[0]    # custom key
+    
+    elif len(args) == 2:
+        manual_key = args[0]        # custom key
+        duration = args[1]          # custom duration
+
+    # Generate key
+    key = get_key(manual_key)
+
+    # Parse duration
+    seconds = parse_duration(duration)
+
+    # Save
     data = load_keys()
-
-    k = make_key(8)
-    exp_time = None if expires is None else time.time() + expires
-
-    data["keys"][k] = {
-        "used": False,
+    data["keys"][key] = {
         "owner": None,
-        "created_by": ADMIN_CHAT_ID,
         "created_at": time.time(),
-        "expires_at": exp_time,
+        "expires_at": None if seconds is None else time.time() + seconds
     }
     save_keys(data)
 
-    exp_disp = "Lifetime" if exp_time is None else PH_TIME()
+    # Format expiry
+    exp = data["keys"][key]["expires_at"]
+    exp_text = "♾ Lifetime" if exp is None else datetime.fromtimestamp(exp).strftime("%Y-%m-%d %I:%M %p")
 
-    msg = (
-        "━━━━━━━━━━━━━━━━━━\n"
-        "✨ 𝐊𝐄𝐘 𝐆𝐄𝐍𝐄𝐑𝐀𝐓𝐄𝐃\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        f"🔑 𝐊𝐞𝐲: `{k}`\n"
-        f"📅 𝐄𝐱𝐩𝐢𝐫𝐞𝐬: {exp_disp}\n\n"
-        "𝐇𝐎𝐖 𝐓𝐎 𝐑𝐄𝐃𝐄𝐄𝐌?\n"
-        "1️⃣ Click this link @KAZEHAYAVIPBOT\n"
-        "2️⃣ Click start or /start\n"
-        "3️⃣ /key (your key)\n"
-        f"4️⃣ Example: /key `{k}`\n"
+    # Reply
+    await update.message.reply_text(
+        f"✨ KEY GENERATED\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"🔑 Key: `{key}`\n"
+        f"📅 Expires: {exp_text}\n\n"
+        "HOW TO REDEEM?\n"
+        "1️⃣ Open the bot\n"
+        "2️⃣ Type /start\n"
+        "3️⃣ Type /key (your key)\n"
+        f"4️⃣ Example: /key `{key}`",
+        parse_mode="Markdown"
     )
 
     await update.message.reply_text(msg, parse_mode="Markdown")
