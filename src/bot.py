@@ -567,7 +567,8 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
         ]
 
-    if data == "menu_generate":
+    # --- GENERATE MENU ---
+if data == "menu_generate":
     return await q.edit_message_text(
         "⚡ *ACCOUNT GENERATION CENTER*\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
