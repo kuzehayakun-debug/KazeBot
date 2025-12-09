@@ -616,3 +616,7 @@ def main():
 
     print("BOT RUNNING on Render...")
     app.run_polling()
+
+if __name__ == "__main__":
+    keep_alive()
+    asyncio.run(main())
