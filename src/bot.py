@@ -105,11 +105,9 @@ async def is_user_authorized(uid):
 async def generate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
-    # Check kung authorized
     if not await is_user_authorized(user.id):
         return await update.message.reply_text("❌ You are not authorized. Please redeem a valid key.")
 
-    # Same menu as in /start but generate only
     keyboard = [
         [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
          InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
@@ -138,11 +136,12 @@ async def generate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
+    # Not authorized
     if not await is_user_authorized(user.id):
         return await update.message.reply_text(
-            f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
+            f"✨ WELCOME HI {user.full_name}! ✨\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
+            "🔐 KEY VERIFICATION REQUIRED\n"
             "Before you can use the generator, please enter your premium key.\n\n"
             "🛒 Buy key: @KAZEHAYAMODZ"
         )
@@ -158,12 +157,6 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-
-    async def menu_callback(update, context):
-    q = update.callback_query
-    await q.answer()
-    user = q.from_user
-    data = q.data
 
     # --- GENERATE ACCOUNTS MENU ---
     if data == "menu_generate":
@@ -476,7 +469,7 @@ async def send_alert(bot, user, typ, count):
     except:
         pass
 
-# replace your old menu_callback with this
+    # ---------------- MENU CALLBACK ----------------
 async def menu_callback(update, context):
     q = update.callback_query
     await q.answer()
@@ -492,7 +485,7 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("✨ CODM", callback_data="codm"),
              InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
 
-            [InlineKeyboardButton("💙 Facebook", callback_data="facebook"),
+            [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
              InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
 
             [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
@@ -507,6 +500,7 @@ async def menu_callback(update, context):
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(gen_keys)
         )
+
     # --- TOOLS HUB MENU ---
     if data == "menu_tools":
         tools = [
@@ -516,13 +510,14 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
             [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
         ]
+
         return await q.edit_message_text(
             "🛠 *Essential Tools Hub*",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(tools)
         )
 
-    # --- CHANNEL ---
+    # --- CHANNEL MENU ---
     if data == "menu_channel":
         return await q.edit_message_text(
             "📢 *Join our official channel:*\n"
@@ -533,7 +528,7 @@ async def menu_callback(update, context):
             ])
         )
 
-    # --- BACK BUTTON: home menu ---
+    # --- BACK TO HOME ---
     if data == "back_to_home":
         home = [
             [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
@@ -546,40 +541,38 @@ async def menu_callback(update, context):
             reply_markup=InlineKeyboardMarkup(home)
         )
 
-    # --- TOOLS handlers (simple stub: you can implement actual logic) ---
+    # --- TOOL MESSAGES ---
     if data == "tool_divider":
-        return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process or use /tool_divide <file> (implement).")
+        return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process.")
     if data == "tool_dupe":
-        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend file to process or use /tool_dupe (implement).")
+        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend file to process.")
     if data == "tool_url":
-        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend file or text to clean URLs (implement).")
+        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend text or file.")
     if data == "tool_file":
-        return await q.edit_message_text("📂 File Processor selected.\nSend file to process (implement).")
+        return await q.edit_message_text("📂 File Processor selected.\nSend file.")
 
-    # --- If data matches a generator choice (valorant/codm/...) then run generation flow ---
-    # Make sure FILE_MAP exists and contains these keys
+    # --- GENERATION HANDLER ---
     if data in FILE_MAP:
         choice = data
 
-        # auth check
+        # verify premium
         if not await is_user_authorized(user.id):
             return await q.message.reply_text("❌ Not authorized.")
 
         # cooldown
         now = time.time()
         if now - user_cool.get(user.id, 0) < COOLDOWN:
-            return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s")
+            return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s.")
         user_cool[user.id] = now
 
-        # Loading msg
-        msg = await q.message.reply_text(f"🔥 Searching {choice} database...")
+        # loading
+        msg = await q.message.reply_text(f"🔥 Searching {choice} database…")
         await asyncio.sleep(1.5)
         await msg.delete()
 
-        # Extract
+        # extract
         content, count = extract_lines(FILE_MAP[choice], 100)
 
-        # Alert admin
         await send_alert(context.bot, user, choice, count)
 
         if count == 0:
@@ -598,15 +591,7 @@ async def menu_callback(update, context):
             "💎 Thank you for using premium service!"
         )
 
-        return await q.message.reply_document(
-            bio,
-            filename=f"{choice}.txt",
-            caption=caption,
-            parse_mode="Markdown"
-        )
-
-    # --- fallback: unknown callback ---
-    await q.answer("Unknown option.", show_alert=False)
+        return await q.message.reply_document(bio, filename=f"{choice}.txt", caption=caption)
         
 # ---------------- RUN BOT ----------------
 def main():
