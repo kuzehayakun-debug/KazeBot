@@ -627,24 +627,27 @@ async def menu_callback(update, context):
         )
         
 # ---------------- FILE HANDLER FOR TOOLS ----------------
-async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tool = context.user_data.get("tool_mode")
+async def number_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Check if waiting for input
+    if not context.user_data.get("await_lines"):
+        return  # ignore random text
 
-    # ============================
-    # HANDLE LINES INPUT FOR DIVIDER
-    # ============================
-    if context.user_data.get("await_lines"):
-        try:
-            num = int(update.message.text)
-            context.user_data["lines_per_file"] = num
-            context.user_data["await_lines"] = False
-            return await update.message.reply_text(
-                f"✅ Divider set to *{num} lines per file!*\n\n📄 Now send your TXT file.",
-                parse_mode="Markdown"
-            )
-        except:
-            return await update.message.reply_text("❌ Invalid number. Please enter a valid number.")
-    
+    # Validate number
+    try:
+        lines = int(update.message.text)
+        if lines <= 0:
+            raise ValueError
+    except:
+        return await update.message.reply_text("❌ Please enter a valid number.")
+
+    # Save number
+    context.user_data["lines_per_file"] = lines
+    context.user_data["await_lines"] = False
+
+    return await update.message.reply_text(
+        f"✅ Divider set to *{lines} lines per file*.\n\n📄 Now send your TXT file.",
+        parse_mode="Markdown"
+    )    
 
     # ============================
     # NEED DOCUMENT FILE?
