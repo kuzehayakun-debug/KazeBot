@@ -551,40 +551,46 @@ async def menu_callback(update, context):
             reply_markup=InlineKeyboardMarkup(home)
         )
 
-    # --- TOOL MESSAGES ---
+    # --- TOOL: TXT Divider ---
     if data == "tool_divider":
         context.user_data["tool_mode"] = "divider"
         return await q.edit_message_text(
-            "📄 TXT Divider selected.\nSend TXT file now."
+            "📄 TXT Divider selected.\nSend TXT file now.",
+            parse_mode="Markdown"
         )
 
-if data == "tool_dupe":
-    context.user_data["tool_mode"] = "dupe"
-    return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend TXT file now.")
+    # --- TOOL: Duplicate Remover ---
+    if data == "tool_dupe":
+        context.user_data["tool_mode"] = "dupe"
+        return await q.edit_message_text(
+            "🧹 Duplicate Remover selected.\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
 
-if data == "tool_url":
-    context.user_data["tool_mode"] = "url"
-    return await q.edit_message_text("🔗 URL Cleaner selected.\nSend TXT file now.")
+    # --- TOOL: URL Cleaner ---
+    if data == "tool_url":
+        context.user_data["tool_mode"] = "url"
+        return await q.edit_message_text(
+            "🔗 URL Cleaner selected.\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
+
     # --- GENERATION HANDLER ---
     if data in FILE_MAP:
         choice = data
 
-        # verify premium
         if not await is_user_authorized(user.id):
             return await q.message.reply_text("❌ Not authorized.")
 
-        # cooldown
         now = time.time()
         if now - user_cool.get(user.id, 0) < COOLDOWN:
             return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s.")
         user_cool[user.id] = now
 
-        # loading
         msg = await q.message.reply_text(f"🔥 Searching {choice} database…")
         await asyncio.sleep(1.5)
         await msg.delete()
 
-        # extract
         content, count = extract_lines(FILE_MAP[choice], 100)
 
         await send_alert(context.bot, user, choice, count)
@@ -605,8 +611,12 @@ if data == "tool_url":
             "💎 Thank you for using premium service!"
         )
 
-        return await q.message.reply_document(bio, filename=f"{choice}.txt", caption=caption)
-
+        return await q.message.reply_document(
+            bio,
+            filename=f"{choice}.txt",
+            caption=caption
+        )
+        
 # ---------------- FILE HANDLER FOR TOOLS ----------------
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_id = update.message.document.file_id
