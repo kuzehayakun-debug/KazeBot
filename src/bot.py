@@ -322,6 +322,7 @@ async def send_alert(bot, user, typ, count):
         pass
 
 async def button_callback(update, context):
+async def button_callback(update, context):
     q = update.callback_query
     await q.answer()
     user = q.from_user
@@ -335,7 +336,7 @@ async def button_callback(update, context):
 
     now = time.time()
     if now - user_cool.get(user.id, 0) < COOLDOWN:
-        return await q.message.reply_text(f"⏳ Cooldown {COOLDOWN}s")
+        return await q.message.reply_text(f"⏳ 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 {COOLDOWN}s")
     user_cool[user.id] = now
 
     # Loading message
@@ -343,10 +344,16 @@ async def button_callback(update, context):
     await asyncio.sleep(2)
     await msg.delete()
 
+    # Extract
     content, count = extract_lines(FILE_MAP[choice], 100)
+
+    # 🔥 NEW GENERATION ALERT
+    await send_alert(context.bot, user, choice, count)
+
     if count == 0:
         return await q.message.reply_text("⚠️ No more lines.")
 
+    # Send file
     bio = io.BytesIO(content.encode())
     bio.name = f"{choice}.txt"
 
