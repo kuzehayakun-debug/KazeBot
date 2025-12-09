@@ -477,32 +477,36 @@ async def send_alert(bot, user, typ, count):
         pass
 
 # replace your old menu_callback with this
-async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def menu_callback(update, context):
     q = update.callback_query
     await q.answer()
-    data = q.data
     user = q.from_user
+    data = q.data
 
-    # --- MAIN MENU: show Generate / Tools / Channel ---
+    # --- GENERATE ACCOUNTS MENU ---
     if data == "menu_generate":
         gen_keys = [
             [InlineKeyboardButton("🎮 Valorant", callback_data="valorant"),
              InlineKeyboardButton("🤖 Roblox", callback_data="roblox")],
+
             [InlineKeyboardButton("✨ CODM", callback_data="codm"),
              InlineKeyboardButton("🔥 Gaslite", callback_data="gaslite")],
-            [InlineKeyboardButton("📘 Facebook", callback_data="facebook"),
+
+            [InlineKeyboardButton("💙 Facebook", callback_data="facebook"),
              InlineKeyboardButton("📧 Gmail", callback_data="gmail")],
+
             [InlineKeyboardButton("♨ Bloodstrike", callback_data="bloodstrike"),
              InlineKeyboardButton("🎲 Random", callback_data="random")],
+
             [InlineKeyboardButton("📌 100082", callback_data="100082")],
             [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
         ]
+
         return await q.edit_message_text(
             "⚡ *Select account to generate:*",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(gen_keys)
         )
-
     # --- TOOLS HUB MENU ---
     if data == "menu_tools":
         tools = [
