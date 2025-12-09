@@ -487,7 +487,7 @@ async def send_alert(bot, user, typ, count):
     except:
         pass
 
-    # ---------------- MENU CALLBACK ----------------
+# -------------------- MENU CALLBACK --------------------
 async def menu_callback(update, context):
     q = update.callback_query
     await q.answer()
@@ -520,69 +520,69 @@ async def menu_callback(update, context):
         )
 
     # --- TOOLS HUB MENU ---
-if data == "menu_tools":
-    tools = [
-        [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
-        [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
-        [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
-        [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
-        [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
-    ]
+    if data == "menu_tools":
+        tools = [
+            [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
+            [InlineKeyboardButton("🧹 Duplicate Remover", callback_data="tool_dupe")],
+            [InlineKeyboardButton("🔗 URL Cleaner", callback_data="tool_url")],
+            [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+        ]
 
-    return await q.edit_message_text(
-        "🛠 *Essential Tools Hub*",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(tools)
-    )
+        return await q.edit_message_text(
+            "🛠 *Essential Tools Hub*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(tools)
+        )
 
-# --- CHANNEL MENU ---
-if data == "menu_channel":
-    return await q.edit_message_text(
-        "📢 Tap the button below to join:",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
-        ])
-    )
+    # --- CHANNEL MENU ---
+    if data == "menu_channel":
+        return await q.edit_message_text(
+            "📢 Tap the button below to join:",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
+                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
+            ])
+        )
 
-# --- BACK TO HOME ---
-if data == "back_to_home":
-    home = [
-        [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
-        [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
-        [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
-    ]
-    return await q.edit_message_text(
-        "✨ *Welcome back!* Choose an option:",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(home)
-    )
+    # --- BACK TO HOME ---
+    if data == "back_to_home":
+        home = [
+            [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+            [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+            [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
+        ]
+        return await q.edit_message_text(
+            "✨ *Welcome back!* Choose an option:",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(home)
+        )
 
-# --- TOOL: TXT Divider ---
-if data == "tool_divider":
-    context.user_data["tool_mode"] = "divider"
-    context.user_data["await_lines"] = True
-    return await q.edit_message_text(
-        "📄 TXT Divider selected.\n\n➡ Enter number of lines per file:",
-        parse_mode="Markdown"
-    )
+    # --- TOOL: TXT Divider ---
+    if data == "tool_divider":
+        context.user_data["tool_mode"] = "divider"
+        context.user_data["await_lines"] = True
+        return await q.edit_message_text(
+            "📄 TXT Divider selected.\n\n➡ Enter number of lines per file:",
+            parse_mode="Markdown"
+        )
 
-# --- TOOL: Duplicate Remover ---
-if data == "tool_dupe":
-    context.user_data["tool_mode"] = "dupe"
-    return await q.edit_message_text(
-        "🧹 Duplicate Remover selected.\nSend TXT file now.",
-        parse_mode="Markdown"
-    )
+    # --- TOOL: Duplicate Remover ---
+    if data == "tool_dupe":
+        context.user_data["tool_mode"] = "dupe"
+        return await q.edit_message_text(
+            "🧹 Duplicate Remover selected.\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
 
-# --- TOOL: URL Cleaner ---
-if data == "tool_url":
-    context.user_data["tool_mode"] = "url"
-    return await q.edit_message_text(
-        "🔗 URL Cleaner selected.\nSend TXT file now.",
-        parse_mode="Markdown"
-    )
+    # --- TOOL: URL Cleaner ---
+    if data == "tool_url":
+        context.user_data["tool_mode"] = "url"
+        return await q.edit_message_text(
+            "🔗 URL Cleaner selected.\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
 
 # --- GENERATION HANDLER ---
 if data in FILE_MAP:
