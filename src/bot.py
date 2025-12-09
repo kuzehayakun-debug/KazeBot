@@ -348,17 +348,35 @@ async def key_cmd(update, context):
         exp_text = datetime.fromtimestamp(exp).strftime("%Y-%m-%d %I:%M %p")
 
     premium_msg = (
-        "🎉 *REDEEM KEY SUCCESSFUL!*\n\n"
-        "⚡ Enjoy faster processing, priority access, and smooth generation!\n\n"
-        "🛡 *KEY DETAILS*\n"
-        f"🔑 Key: `{key}`\n"
-        f"📅 Expires: {exp_text}\n\n"
-        "📘 *COMMANDS YOU CAN USE NOW*\n"
-        "• /start – Open the main menu\n"
-        "• /generate – Generate accounts\n"
-        "• /mytime – Check your license time\n"
-        "• /tools – Access file utilities\n\n"
-        "▶ *Type /start to begin!"   
+    "🏆 *PREMIUM ACCESS ACTIVATED!* 🏆\n"
+    "━━━━━━━━━━━━━━━━━━━━━━\n"
+    "✨ Welcome to the VIP experience!\n"
+    "Your account is now fully upgraded.\n\n"
+    
+    "💎 *KEY INFORMATION*\n"
+    f"🔑 Key: `{key}`\n"
+    f"📅 Expires: {exp_text}\n"
+    "📌 Status: *ACTIVE*\n\n"
+    
+    "🚀 *PREMIUM FEATURES UNLOCKED*\n"
+    "• ⚡ Faster & smoother generation\n"
+    "• 🎯 Priority processing (no cooldown delays)\n"
+    "• 🔥 Access to all generator types\n"
+    "• ♾ Unlimited usage\n"
+    "• 🛡 Anti-error protection enabled\n"
+    "• 📞 Owner/Dev priority support\n\n"
+    
+    "📘 *AVAILABLE COMMANDS*\n"
+    "• /start – Open the main menu\n"
+    "• /generate – Generate accounts instantly\n"
+    "• /mytime – Check your license validity\n\n"
+    
+    "🔔 *IMPORTANT REMINDERS*\n"
+    "• Keep your key private\n"
+    "• Don’t share your account to avoid lockouts\n"
+    "• Generator resets daily for fresh combos\n\n"
+    
+    "▶ *Type /start to begin your premium journey!* ✨"
     )
 
     return await update.message.reply_text(
@@ -497,9 +515,21 @@ async def menu_callback(update, context):
         ]
 
         return await q.edit_message_text(
-            "⚡ *Select account to generate:*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(gen_keys)
+    "⚡ *ACCOUNT GENERATION CENTER*\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    "Welcome to the *Premium Account Generator Hub!* 🔥\n"
+    "Here, you can instantly generate *fresh*, *filtered*, and *unused* accounts from multiple platforms.\n\n"
+    "🚀 *WHAT YOU CAN EXPECT:*\n"
+    "• Ultra–fast generation speed\n"
+    "• Cleaned & duplicate–free combos\n"
+    "• Stable performance even under heavy usage\n"
+    "• Updated databases for maximum hit rate\n"
+    "• Easy to copy, paste, and use\n\n"
+    "📂 *SUPPORTED CATEGORIES:*\n"
+    "Choose any platform below. Each category pulls NEW lines directly from the database.\n\n"
+    "👇 *SELECT AN ACCOUNT TYPE TO BEGIN:*",
+    parse_mode="Markdown",
+    reply_markup=InlineKeyboardMarkup(gen_keys)
         )
 
     # --- TOOLS HUB MENU ---
