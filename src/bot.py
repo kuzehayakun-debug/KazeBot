@@ -612,24 +612,22 @@ async def menu_callback(update, context):
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # ----- Commands -----
+    # Commands
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("genkey", genkey_cmd))
     app.add_handler(CommandHandler("key", key_cmd))
     app.add_handler(CommandHandler("revoke", revoke_cmd))
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
-    app.add_handler(CommandHandler("generate", generate_cmd))  # ← ADD THIS
+    app.add_handler(CommandHandler("generate", generate_cmd))
 
-    # ----- Menu Buttons (Tools / Generate / Channel) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^back_"))
+    # Menus
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|back_|tool_)"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(" + "|".join(FILE_MAP.keys()) + ")$"))
 
-    # ----- Tools Buttons (txt divider / url cleaner / duplicate remover) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^tool_"))
-
-    # ----- Generator Buttons (valorant, codm, roblox etc) -----
-    app.add_handler(CallbackQueryHandler(button_callback))
+    # Files + Text
+    app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, number_handler))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
