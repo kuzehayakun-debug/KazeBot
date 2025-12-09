@@ -354,10 +354,11 @@ async def key_cmd(update, context):
         f"🔑 Key: `{key}`\n"
         f"📅 Expires: {exp_text}\n\n"
         "📘 *COMMANDS YOU CAN USE NOW*\n"
-        "• /start – Start the bot and generate\n"
-        "• /mytime – View your license validity\n"
-        "• You can now use *all premium features!*\n\n"
-        "▶ Type /start to begin!"
+        "• /start – Open the main menu\n"
+        "• /generate – Generate accounts\n"
+        "• /mytime – Check your license time\n"
+        "• /tools – Access file utilities\n\n"
+        "▶ *Type /start to begin!"   
     )
 
     return await update.message.reply_text(
@@ -605,6 +606,7 @@ def main():
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
+    app.add_handler(CommandHandler("tools", tools_cmd))
 
     # ----- Menu Buttons -----
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
