@@ -72,13 +72,14 @@ def save_keys(data):
 def make_key(length=8):
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
     return "".join(secrets.choice(chars) for _ in range(length))
-    def generate_full_key(length=8):
+
+def generate_full_key(length=8):
     return "Kaze-" + make_key(length)
 
 def get_key(manual_key=None):
-    if manual_key:      # kung may custom key
+    if manual_key:  # custom key
         return manual_key.strip()
-    return generate_full_key()   # kung walang custom key, random key
+    return generate_full_key()  # random key with prefix, random key
 
 def parse_duration(text):
     text = text.lower().strip()
