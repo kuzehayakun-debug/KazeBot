@@ -153,9 +153,16 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text(
-        "✨ *Welcome back!* Choose an option below:",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+    "✨ *WELCOME TO YOUR CONTROL PANEL*\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    "Select any option below to get started. Your tools, generators, and premium features\n"
+    "are all organized here for easy access.\n\n"
+    "⚡ *Generate Accounts* – Fast & fresh combos\n"
+    "🛠 *Tools Hub* – Useful utilities for file processing\n"
+    "📢 *Channel* – Stay updated with new releases\n\n"
+    "👇 *Choose an option to continue:*",
+    parse_mode="Markdown",
+    reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
     # --- GENERATE ACCOUNTS MENU ---
@@ -239,7 +246,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if intro.exists():
         await update.message.reply_video(
             video=FSInputFile(intro),
-            caption="✨ Select an account type:",
+            caption="✨ Select an account type to generate:",
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
     else:
