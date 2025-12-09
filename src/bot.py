@@ -562,8 +562,9 @@ async def menu_callback(update, context):
     # --- TOOL: TXT Divider ---
     if data == "tool_divider":
         context.user_data["tool_mode"] = "divider"
+        context.user_data["await_lines"] = True
         return await q.edit_message_text(
-            "📄 TXT Divider selected.\nSend TXT file now.",
+            "📄 TXT Divider selected.\n\n➡ Enter number of lines per file:",
             parse_mode="Markdown"
         )
 
@@ -627,47 +628,81 @@ async def menu_callback(update, context):
         
 # ---------------- FILE HANDLER FOR TOOLS ----------------
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tool = context.user_data.get("tool_mode")
+
+    # ============================
+    # HANDLE LINES INPUT FOR DIVIDER
+    # ============================
+    if context.user_data.get("await_lines"):
+        try:
+            num = int(update.message.text)
+            context.user_data["lines_per_file"] = num
+            context.user_data["await_lines"] = False
+            return await update.message.reply_text(
+                f"✅ Divider set to *{num} lines per file!*\n\n📄 Now send your TXT file.",
+                parse_mode="Markdown"
+            )
+        except:
+            return await update.message.reply_text("❌ Invalid number. Please enter a valid number.")
+    
+
+    # ============================
+    # NEED DOCUMENT FILE?
+    # ============================
+    if not update.message.document:
+        return await update.message.reply_text("❗ Please send a TXT file.")
+
     file_id = update.message.document.file_id
     file = await context.bot.get_file(file_id)
     content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
 
-    tool = context.user_data.get("tool_mode")
-
-    # ======================================
-    # TXT DIVIDER
-    # ======================================
+    # ============================
+    # CUSTOM DIVIDER
+    # ============================
     if tool == "divider":
+        lines_per = context.user_data.get("lines_per_file")
+
+        if not lines_per:
+            return await update.message.reply_text("❌ Please enter number of lines first.")
+
         lines = content.splitlines()
-        half = len(lines) // 2
-        part1 = "\n".join(lines[:half])
-        part2 = "\n".join(lines[half:])
+        parts = [lines[i:i + lines_per] for i in range(0, len(lines), lines_per)]
 
-        bio1 = io.BytesIO(part1.encode()); bio1.name = "Part1.txt"
-        bio2 = io.BytesIO(part2.encode()); bio2.name = "Part2.txt"
+        for idx, part in enumerate(parts, 1):
+            data = "\n".join(part)
+            bio = io.BytesIO(data.encode())
+            bio.name = f"Part{idx}.txt"
 
-        await update.message.reply_document(bio1)
-        await update.message.reply_document(bio2)
+            await update.message.reply_document(bio, caption=f"📁 Part {idx}")
+
         return
 
-    # ======================================
+
+    # ============================
     # DUPLICATE REMOVER
-    # ======================================
+    # ============================
     if tool == "dupe":
         lines = content.splitlines()
         unique = list(dict.fromkeys(lines))
         result = "\n".join(unique)
 
-        bio = io.BytesIO(result.encode()); bio.name = "Cleaned.txt"
+        bio = io.BytesIO(result.encode())
+        bio.name = "Cleaned.txt"
+
         await update.message.reply_document(bio)
         return
 
-    # ======================================
+
+    # ============================
     # URL CLEANER
-    # ======================================
+    # ============================
     if tool == "url":
         import re
         cleaned = re.sub(r"http\S+", "", content)
-        bio = io.BytesIO(cleaned.encode()); bio.name = "URL_Cleaned.txt"
+
+        bio = io.BytesIO(cleaned.encode())
+        bio.name = "URL_Cleaned.txt"
+
         await update.message.reply_document(bio)
         return
 
@@ -686,18 +721,17 @@ def main():
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
 
-    # ----- Menus (Start menu, Tools, Generate, Channel) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(menu_|back_|tool_)"))
+    # ----- ALL MENU BUTTONS -----
+    app.add_handler(CallbackQueryHandler(menu_callback))
 
-    # ----- Generator buttons (valorant, codm, facebook, etc) -----
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern="^(" + "|".join(FILE_MAP.keys()) + ")$"))
-
-    # ----- File upload for tools -----
+    # ----- FILE UPLOAD (TXT Tools) -----
     app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
+
+    # ----- NUMBER INPUT (for Divider custom lines) -----
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, number_handler))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     keep_alive()
