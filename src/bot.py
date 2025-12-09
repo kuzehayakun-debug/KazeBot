@@ -529,14 +529,14 @@ async def menu_callback(update, context):
 
     # --- CHANNEL MENU ---
     if data == "menu_channel":
-    return await q.edit_message_text(
-        "📢 Tap the button below to join:",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
-            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
-        ])
-    )
+        return await q.edit_message_text(
+            "📢 Tap the button below to join:",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
+                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
+            ])
+        )
 
     # --- BACK TO HOME ---
     if data == "back_to_home":
@@ -553,8 +553,10 @@ async def menu_callback(update, context):
 
     # --- TOOL MESSAGES ---
     if data == "tool_divider":
-    context.user_data["tool_mode"] = "divider"
-    return await q.edit_message_text("📄 TXT Divider selected.\nSend TXT file now.")
+        context.user_data["tool_mode"] = "divider"
+        return await q.edit_message_text(
+            "📄 TXT Divider selected.\nSend TXT file now."
+        )
 
 if data == "tool_dupe":
     context.user_data["tool_mode"] = "dupe"
