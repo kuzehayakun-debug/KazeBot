@@ -208,40 +208,78 @@ async def genkey_cmd(update, context):
 
     await update.message.reply_text(msg, parse_mode="Markdown")
 
-# ---------------- /key ----------------
+# -------------------- /key --------------------
 async def key_cmd(update, context):
     user = update.effective_user
-    if not context.args:
-        return await update.message.reply_text("Usage: /key <KEY>")
-    key = context.args[0]
 
+    # Walang argument
+    if not context.args:
+        return await update.message.reply_text(
+            "❗ Usage: `/key <YOUR_KEY>`",
+            parse_mode="Markdown"
+        )
+
+    key = context.args[0].strip()
+
+    # Load keys
     data = load_keys()
     info = data["keys"].get(key)
+
+    # Invalid key
     if not info:
-        return await update.message.reply_text("❌ Invalid key.")
+        return await update.message.reply_text(
+            "❌ Invalid key. Please try again."
+        )
+
+    # --- SAFE FIX 1: ensure default values ---
+    if "used" not in info:
+        info["used"] = False
+    if "owner" not in info:
+        info["owner"] = None
+
+    # Already used by someone else
     if info["used"] and info["owner"] != user.id:
-        return await update.message.reply_text("❌ Already used.")
+        return await update.message.reply_text(
+            "❌ This key is already used by another user."
+        )
+
+    # Check expiry
     exp = info.get("expires_at")
     if exp and time.time() > exp:
-        return await update.message.reply_text("⏰ Key expired.")
+        return await update.message.reply_text(
+            "⏳ This key has expired."
+        )
 
+    # --- REDEEM SUCCESS ---
     info["used"] = True
     info["owner"] = user.id
     data["users"][str(user.id)] = key
+
     save_keys(data)
 
+    # Lifetime text
+    if exp is None:
+        exp_text = "♾ Lifetime"
+    else:
+        exp_text = datetime.fromtimestamp(exp).strftime("%Y-%m-%d %I:%M %p")
+
     premium_msg = (
-        "🎉 *REDEEM KEY SUCCESSFUL*\n\n"
-        "⚡ Enjoy faster processing, priority access, and enhanced limits.\n"
-        "🛡️ You also get smoother performance and reduced cooldown times.\n\n"
-        "🔰 *COMMANDS YOU CAN USE*\n"
-        "• /start – Start the bot and generate accounts\n"
-        "• /mytime – View your license validity\n\n"
-        "👉 You can now use all premium features anytime.\n"
-        "▶️ Type /start to begin your premium experience."
+        "🎉 *REDEEM KEY SUCCESSFUL!*\n\n"
+        "⚡ Enjoy faster processing, priority access, and smooth generation!\n\n"
+        "🛡 *KEY DETAILS*\n"
+        f"🔑 Key: `{key}`\n"
+        f"📅 Expires: {exp_text}\n\n"
+        "📘 *COMMANDS YOU CAN USE NOW*\n"
+        "• /start – Start the bot and generate\n"
+        "• /mytime – View your license validity\n"
+        "• You can now use *all premium features!*\n\n"
+        "▶ Type /start to begin!"
     )
 
-    await update.message.reply_text(premium_msg, parse_mode="Markdown")
+    return await update.message.reply_text(
+        premium_msg,
+        parse_mode="Markdown"
+    )
 # ---------------- /mytime ----------------
 async def mytime_cmd(update, context):
     user = update.effective_user
