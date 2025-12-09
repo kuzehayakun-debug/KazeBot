@@ -136,16 +136,26 @@ async def generate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
-    # Not authorized
     if not await is_user_authorized(user.id):
         return await update.message.reply_text(
-            f"✨ WELCOME HI {user.full_name}! ✨\n"
+            f"✨ 𝙒𝙀𝙇𝘾𝙊𝙈𝙀 𝙃𝙄 {user.full_name}! ✨\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 KEY VERIFICATION REQUIRED\n"
+            "🔐 𝙆𝙀𝙔 𝙑𝙀𝙍𝙄𝙁𝙄𝘾𝘼𝙏𝙄𝙊𝙉 𝙍𝙀𝙌𝙐𝙄𝙍𝙀𝘿\n"
             "Before you can use the generator, please enter your premium key.\n\n"
             "🛒 Buy key: @KAZEHAYAMODZ"
         )
 
+    keyboard = [
+        [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
+        [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
+        [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
+    ]
+
+    await update.message.reply_text(
+        "✨ *Welcome back!* Choose an option below:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
     keyboard = [
         [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
         [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
@@ -519,14 +529,14 @@ async def menu_callback(update, context):
 
     # --- CHANNEL MENU ---
     if data == "menu_channel":
-        return await q.edit_message_text(
-            "📢 *Join our official channel:*\n"
-            "👉 https://t.me/+wkXVYyqiRYplZjk1",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
-            ])
-        )
+    return await q.edit_message_text(
+        "📢 Tap the button below to join:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
+            [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
+        ])
+    )
 
     # --- BACK TO HOME ---
     if data == "back_to_home":
@@ -543,14 +553,16 @@ async def menu_callback(update, context):
 
     # --- TOOL MESSAGES ---
     if data == "tool_divider":
-        return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process.")
-    if data == "tool_dupe":
-        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend file to process.")
-    if data == "tool_url":
-        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend text or file.")
-    if data == "tool_file":
-        return await q.edit_message_text("📂 File Processor selected.\nSend file.")
+    context.user_data["tool_mode"] = "divider"
+    return await q.edit_message_text("📄 TXT Divider selected.\nSend TXT file now.")
 
+if data == "tool_dupe":
+    context.user_data["tool_mode"] = "dupe"
+    return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend TXT file now.")
+
+if data == "tool_url":
+    context.user_data["tool_mode"] = "url"
+    return await q.edit_message_text("🔗 URL Cleaner selected.\nSend TXT file now.")
     # --- GENERATION HANDLER ---
     if data in FILE_MAP:
         choice = data
@@ -592,7 +604,55 @@ async def menu_callback(update, context):
         )
 
         return await q.message.reply_document(bio, filename=f"{choice}.txt", caption=caption)
-        
+
+# ---------------- FILE HANDLER FOR TOOLS ----------------
+async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    file_id = update.message.document.file_id
+    file = await context.bot.get_file(file_id)
+    content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
+
+    tool = context.user_data.get("tool_mode")
+
+    # ======================================
+    # TXT DIVIDER
+    # ======================================
+    if tool == "divider":
+        lines = content.splitlines()
+        half = len(lines) // 2
+        part1 = "\n".join(lines[:half])
+        part2 = "\n".join(lines[half:])
+
+        bio1 = io.BytesIO(part1.encode()); bio1.name = "Part1.txt"
+        bio2 = io.BytesIO(part2.encode()); bio2.name = "Part2.txt"
+
+        await update.message.reply_document(bio1)
+        await update.message.reply_document(bio2)
+        return
+
+    # ======================================
+    # DUPLICATE REMOVER
+    # ======================================
+    if tool == "dupe":
+        lines = content.splitlines()
+        unique = list(dict.fromkeys(lines))
+        result = "\n".join(unique)
+
+        bio = io.BytesIO(result.encode()); bio.name = "Cleaned.txt"
+        await update.message.reply_document(bio)
+        return
+
+    # ======================================
+    # URL CLEANER
+    # ======================================
+    if tool == "url":
+        import re
+        cleaned = re.sub(r"http\S+", "", content)
+        bio = io.BytesIO(cleaned.encode()); bio.name = "URL_Cleaned.txt"
+        await update.message.reply_document(bio)
+        return
+
+    await update.message.reply_text("❗ Please choose a tool first.")
+    
 # ---------------- RUN BOT ----------------
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -613,6 +673,7 @@ def main():
 
     # ----- Generator buttons (valorant, codm, facebook, etc) -----
     app.add_handler(CallbackQueryHandler(menu_callback))
+    app.add_handler(MessageHandler(filters.Document.ALL, file_handler))
 
     print("BOT RUNNING on Render...")
     app.run_polling()
