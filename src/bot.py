@@ -566,22 +566,11 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
             [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
         ]
+        
         return await q.edit_message_text(
-        "⚡ *ACCOUNT GENERATION CENTER*\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "Welcome to the *Premium Account Generator Hub!* 🔥\n"
-        "Here, you can instantly generate *fresh*, *filtered*, and *unused* accounts from multiple platforms.\n\n"
-        "🚀 *WHAT YOU CAN EXPECT:*\n"
-        "• Ultra–fast generation speed\n"
-        "• Cleaned & duplicate–free combos\n"
-        "• Stable performance even under heavy usage\n"
-        "• Updated databases for maximum hit rate\n"
-        "• Easy to copy, paste, and use\n\n"
-        "📂 *SUPPORTED CATEGORIES:*\n"
-        "Choose any platform below. Each category pulls NEW lines directly from the database.\n\n"
-        "👇 *SELECT AN ACCOUNT TYPE TO BEGIN:*",
+            "⚡ *Select account type to generate:*",
             parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(home)
+            reply_markup=InlineKeyboardMarkup(gen_keys)
         )
 
     # --- TOOL MESSAGES ---
