@@ -138,13 +138,19 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Not authorized
     if not await is_user_authorized(user.id):
-        return await update.message.reply_text(
-            f"✨ WELCOME HI {user.full_name}! ✨\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 KEY VERIFICATION REQUIRED\n"
-            "Before you can use the generator, please enter your premium key.\n\n"
-            "🛒 Buy key: @KAZEHAYAMODZ"
-        )
+    return await update.message.reply_text(
+        f"💫 *WELCOME, {user.full_name}!* 💫\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "🔐 *PREMIUM KEY VERIFICATION REQUIRED*\n"
+        "Before you can access the generator, please enter your *premium key* below.\n\n"
+        "🚀 *Once Activated, You Get:*\n"
+        "• Instant account generation\n"
+        "• Clean + verified combos\n"
+        "• CODM / ML / Gaslite / More\n"
+        "• VIP-only features\n\n"
+        "📩 *DM TO BUY KEY:* @KAZEHAYAMODZ",
+        parse_mode="Markdown"
+    )
 
     keyboard = [
         [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
@@ -153,7 +159,7 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text(
-    "✨ *THANK YOU FOT REDEEM NOW SELECT AN OPTION ✨*\n"
+    "✨ *THANK YOU FOR REDEEM! ✨*\n"
     "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     "Select any option below to get started. Your tools, generators, and premium features\n"
     "are all organized here for easy access.\n\n"
