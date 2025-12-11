@@ -153,8 +153,8 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text(
-    "✨ *WELCOME PLEASE SELECT OPTION ✨*\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    "✨ *THANK YOU FOT REDEEM NOW SELECT AN OPTION ✨*\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
     "Select any option below to get started. Your tools, generators, and premium features\n"
     "are all organized here for easy access.\n\n"
     "⚡ *Generate Accounts* – Fast & fresh combos\n"
