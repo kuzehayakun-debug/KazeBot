@@ -136,13 +136,14 @@ async def generate_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
+    
     # Not authorized
-    if not await is_user_authorized(user.id):
+if not await is_user_authorized(user.id):
     return await update.message.reply_text(
         f"💫 *WELCOME, {user.full_name}!* 💫\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "🔐 *PREMIUM KEY VERIFICATION REQUIRED*\n"
-        "Before you can access the generator, please enter your *premium key* below.\n\n"
+        "Before you can access the generator, please enter your premium key.\n\n"
         "🚀 *Once Activated, You Get:*\n"
         "• Instant account generation\n"
         "• Clean + verified combos\n"
