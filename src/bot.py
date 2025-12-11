@@ -32,7 +32,8 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
-    ContextTypes,
+    MessageHandler,   # ← ADD THIS
+    filters           # ← ensure meron
 )
 
 # ---------------- ENV ----------------
