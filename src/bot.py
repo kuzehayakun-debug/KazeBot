@@ -31,7 +31,9 @@ from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
+    MessageHandler,
     ContextTypes,
+    filters
 )
 
 # ---------------- ENVIRONMENT VARIABLES ----------------
