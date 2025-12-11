@@ -139,11 +139,16 @@ async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Not authorized
     if not await is_user_authorized(user.id):
         return await update.message.reply_text(
-            f"✨ WELCOME HI {user.full_name}! ✨\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "🔐 KEY VERIFICATION REQUIRED\n"
-            "Before you can use the generator, please enter your premium key.\n\n"
-            "🛒 Buy key: @KAZEHAYAMODZ"
+            f"💫 *WELCOME, {user.full_name}!* 💫\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🔐 *PREMIUM KEY VERIFICATION REQUIRED*\n"
+            "Before you can access the generator, please enter your premium key.\n\n"
+            "🚀 *Once Activated, You Get:*\n"
+            "• Instant account generation\n"
+            "• Clean + verified combos\n"
+            "• CODM / ML / Gaslite / More\n"
+            "• VIP-only features\n\n"
+            "📩 *DM TO BUY KEY:* @KAZEHAYAMODZ",
         )
 
     keyboard = [
