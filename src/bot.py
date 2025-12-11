@@ -1,41 +1,38 @@
-# bot.py
 import os
 import json
 import asyncio
 import time
-import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import secrets
 import io
-from threading import Thread
-
 from flask import Flask
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    FSInputFile,
-)
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-)
+from flask import Flask
+from threading import Thread
+import os
 
-# ---------------- WEB KEEP-ALIVE (optional for Render) ----------------
-app_web = Flask("")
+app_web = Flask('')
 
-@app_web.route("/")
+@app_web.route('/')
 def home():
     return "Bot is online!"
 
 def keep_alive():
     port = int(os.environ.get("PORT", 10000))
     Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
+    
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InputFile,
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
 
 # ---------------- ENV ----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
