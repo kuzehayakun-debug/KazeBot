@@ -628,68 +628,69 @@ async def menu_callback(update, context):
 
     await q.answer("Unknown option.", show_alert=False)
 
-# ---------------- FILE HANDLER (TOOLS) ----------------
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     if not update.message.document:
-        return await update.message.reply_text("Send a document file (.txt).")
+        return await update.message.reply_text("❗ Please send a TXT file.")
+
     tool = context.user_data.get("tool_mode")
-    file_id = update.message.document.file_id
-    file = await context.bot.get_file(file_id)
+
+    file = await context.bot.get_file(update.message.document.file_id)
     content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
 
-    # TXT DIVIDER (custom lines)
-    if tool == "divider":
-        lines_per_file = context.user_data.get("lines_per_file")
-        if not lines_per_file:
-            return await update.message.reply_text("❌ Please enter number of lines first.")
-        lines = content.splitlines()
-        parts = [lines[i:i + lines_per_file] for i in range(0, len(lines), lines_per_file)]
-        for idx, part in enumerate(parts, 1):
-            part_data = "\n".join(part)
-            bio = io.BytesIO(part_data.encode()); bio.name = f"Part{idx}.txt"
-            await update.message.reply_document(document=bio, caption=f"📁 Part {idx}")
-        return
+    # ---------------- TOOLS MENU ----------------
 
-    # DUPLICATE REMOVER
-    if tool == "dupe":
-        lines = content.splitlines()
-        unique = list(dict.fromkeys(lines))
-        result = "\n".join(unique)
-        bio = io.BytesIO(result.encode()); bio.name = "Cleaned.txt"
-        await update.message.reply_document(bio)
-        return
+    if data == "tool_divider":
+        context.user_data.clear()
+        context.user_data["tool_mode"] = "divider"
+        context.user_data["await_lines"] = True
+        return await q.edit_message_text(
+            "📄 *TXT DIVIDER*\n\n➡ Enter number of lines per file:",
+            parse_mode="Markdown"
+        )
 
-    # URL CLEANER
-    if tool == "url":
-        import re
-        cleaned = re.sub(r"http\S+", "", content)
-        bio = io.BytesIO(cleaned.encode()); bio.name = "URL_Cleaned.txt"
-        await update.message.reply_document(bio)
-        return
+    if data == "tool_dupe":
+        context.user_data.clear()
+        context.user_data["tool_mode"] = "dupe"
+        return await q.edit_message_text(
+            "🧹 *DUPLICATE REMOVER*\n\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
 
-    # FILE processor (generic)
-    if tool == "file":
-        await update.message.reply_text("📂 File received. (No extra processing implemented yet).")
-        return
+    if data == "tool_url":
+        context.user_data.clear()
+        context.user_data["tool_mode"] = "url"
+        return await q.edit_message_text(
+            "🔗 *URL CLEANER*\n\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
 
-    await update.message.reply_text("❗ Please choose a tool first (use /start -> Tools Hub).")
+    if data == "tool_file":
+        context.user_data.clear()
+        context.user_data["tool_mode"] = "file"
+        return await q.edit_message_text(
+            "📂 *FILE PROCESSOR*\n\nSend TXT file now.",
+            parse_mode="Markdown"
+        )
+
+    # No tool selected
+    return await update.message.reply_text("⚠️ No tool selected. Use /start → Tools Hub.")
 
 # ---------------- NUMBER HANDLER (for divider) ----------------
 async def number_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get("await_lines"):
-        text = update.message.text.strip()
         try:
-            num = int(text)
-            if num <= 0:
-                return await update.message.reply_text("⚠️ Number must be greater than 0.")
+            n = int(update.message.text)
+            if n <= 0:
+                return await update.message.reply_text("⚠️ Number must be bigger than 0.")
+            context.user_data["lines_per_file"] = n
+            context.user_data["await_lines"] = False
+            return await update.message.reply_text(
+                f"✅ Divider set to *{n} lines per file*.\nNow send your TXT file.",
+                parse_mode="Markdown"
+            )
         except:
-            return await update.message.reply_text("❌ Please enter a valid number.")
-        context.user_data["lines_per_file"] = num
-        context.user_data["await_lines"] = False
-        return await update.message.reply_text(f"✅ Divider set to *{num} lines per file*.\nNow send your TXT file.", parse_mode="Markdown")
-    # if not awaiting, ignore or provide help
-    # (optional) respond to normal text:
-    # await update.message.reply_text("Command not recognized. Use /start to open menu.")
+            return await update.message.reply_text("❌ Invalid number.")
         
 # ---------------- RUN BOT ----------------
 def main():
