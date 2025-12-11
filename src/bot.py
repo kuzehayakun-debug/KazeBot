@@ -458,7 +458,7 @@ async def broadcast_cmd(update, context):
     count = 0
     for uid in data["users"]:
         try:
-            await context.bot.send_message(uid, f":\n{msg}")
+            await context.bot.send_message(uid, f"\n{msg}")
             count += 1
         except:
             pass
