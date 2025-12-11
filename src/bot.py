@@ -42,13 +42,17 @@ if not BOT_TOKEN:
     raise SystemExit("❌ BOT_TOKEN missing in Render environment.")
 
 # ---------------- DIRECTORIES ----------------
+DATA_DIR = Path("data")
 FILES_DIR = Path("files")
 ASSETS_DIR = Path("assets")
-KEYS_FILE = Path("keys.json")
+KEYS_FILE = DATA_DIR / "keys.json"
 
+# Create folders if missing
+DATA_DIR.mkdir(exist_ok=True)
 FILES_DIR.mkdir(exist_ok=True)
 ASSETS_DIR.mkdir(exist_ok=True)
 
+# Create keys.json if missing
 if not KEYS_FILE.exists():
     KEYS_FILE.write_text(json.dumps({"keys": {}, "users": {}}, indent=2))
 
