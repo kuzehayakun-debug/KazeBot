@@ -54,6 +54,19 @@ if not KEYS_FILE.exists():
 
 PH_TIME = lambda: datetime.now().strftime("%Y-%m-%d %I:%M %p")
 
+# ---------------- DIRECTORIES ----------------
+FILES_DIR = Path("files")
+ASSETS_DIR = Path("assets")
+KEYS_FILE = Path("keys.json")
+
+FILES_DIR.mkdir(exist_ok=True)
+ASSETS_DIR.mkdir(exist_ok=True)
+
+if not KEYS_FILE.exists():
+    KEYS_FILE.write_text(json.dumps({"keys": {}, "users": {}}, indent=2))
+
+PH_TIME = lambda: datetime.now().strftime("%Y-%m-%d %I:%M %p")
+
 # ---------------- LOAD KEY SYSTEM ----------------
 def load_keys():
     try:
@@ -539,7 +552,7 @@ async def menu_callback(update, context):
             reply_markup=InlineKeyboardMarkup(gen_keys)
         )
 
-    # --- TOOLS HUB MENU ---
+    # TOOLS HUB
     if data == "menu_tools":
         tools = [
             [InlineKeyboardButton("📄 TXT Divider", callback_data="tool_divider")],
@@ -548,78 +561,60 @@ async def menu_callback(update, context):
             [InlineKeyboardButton("📂 File Processor", callback_data="tool_file")],
             [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")],
         ]
+        return await q.edit_message_text("🛠 *Essential Tools Hub*", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(tools))
 
-        return await q.edit_message_text(
-            "🛠 *Essential Tools Hub*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(tools)
-        )
-
-    # --- CHANNEL MENU ---
+    # CHANNEL (open link directly)
     if data == "menu_channel":
         return await q.edit_message_text(
-            "📢 *Join our official channel:*\n"
-            "👉 https://t.me/+wkXVYyqiRYplZjk1",
+            "📢 Tap the button below to join:",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("👉 JOIN CHANNEL", url="https://t.me/+wkXVYyqiRYplZjk1")],
                 [InlineKeyboardButton("⬅ Back", callback_data="back_to_home")]
             ])
         )
 
-    # --- BACK TO HOME ---
+    # BACK HOME
     if data == "back_to_home":
         home = [
             [InlineKeyboardButton("⚡ Generate Accounts", callback_data="menu_generate")],
             [InlineKeyboardButton("🛠 Tools Hub", callback_data="menu_tools")],
             [InlineKeyboardButton("📢 Channel", callback_data="menu_channel")],
         ]
+        return await q.edit_message_text("✨ *Choose an option below:*", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(home))
 
-        return await q.edit_message_text(
-            "🏠 *Main Menu*",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(home)   # FIXED
-        )
-
-    # --- TOOL MESSAGES ---
+    # TOOLS selection: sets mode and prompts user to send a file or number
     if data == "tool_divider":
-        return await q.edit_message_text("📄 TXT Divider selected.\nSend file to process.")
+        context.user_data["tool_mode"] = "divider"
+        context.user_data["await_lines"] = True
+        return await q.edit_message_text("📄 TXT Divider selected.\n\n➡ Enter number of lines per file:", parse_mode="Markdown")
     if data == "tool_dupe":
-        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend file to process.")
+        context.user_data["tool_mode"] = "dupe"
+        return await q.edit_message_text("🧹 Duplicate Remover selected.\nSend TXT file now.", parse_mode="Markdown")
     if data == "tool_url":
-        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend text or file.")
+        context.user_data["tool_mode"] = "url"
+        return await q.edit_message_text("🔗 URL Cleaner selected.\nSend TXT file now.", parse_mode="Markdown")
     if data == "tool_file":
-        return await q.edit_message_text("📂 File Processor selected.\nSend file.")
+        context.user_data["tool_mode"] = "file"
+        return await q.edit_message_text("📂 File Processor selected.\nSend TXT file now.", parse_mode="Markdown")
 
-    # --- GENERATION HANDLER ---
+    # GENERATION CHOICES (if callback equals file keys)
     if data in FILE_MAP:
         choice = data
-
-        # verify premium
         if not await is_user_authorized(user.id):
             return await q.message.reply_text("❌ Not authorized.")
-
-        # cooldown
         now = time.time()
         if now - user_cool.get(user.id, 0) < COOLDOWN:
             return await q.message.reply_text(f"⏳ Please wait {COOLDOWN}s.")
         user_cool[user.id] = now
-
-        # loading
         msg = await q.message.reply_text(f"🔥 Searching {choice} database…")
         await asyncio.sleep(1.5)
         await msg.delete()
-
-        # extract
         content, count = extract_lines(FILE_MAP[choice], 100)
-
         await send_alert(context.bot, user, choice, count)
-
         if count == 0:
             return await q.message.reply_text("⚠️ No more lines.")
-
-        bio = io.BytesIO(content.encode())
-        bio.name = f"{choice}.txt"
-
+        bio = io.BytesIO(content.encode()); bio.name = f"{choice}.txt"
         caption = (
             "🎉 GENERATION COMPLETED!\n\n"
             f"📁 Target: {choice}\n"
@@ -629,8 +624,72 @@ async def menu_callback(update, context):
             "🤖 Powered by @KAZEHAYAMODZ\n"
             "💎 Thank you for using premium service!"
         )
-
         return await q.message.reply_document(bio, filename=f"{choice}.txt", caption=caption)
+
+    await q.answer("Unknown option.", show_alert=False)
+
+# ---------------- FILE HANDLER (TOOLS) ----------------
+async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message.document:
+        return await update.message.reply_text("Send a document file (.txt).")
+    tool = context.user_data.get("tool_mode")
+    file_id = update.message.document.file_id
+    file = await context.bot.get_file(file_id)
+    content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
+
+    # TXT DIVIDER (custom lines)
+    if tool == "divider":
+        lines_per_file = context.user_data.get("lines_per_file")
+        if not lines_per_file:
+            return await update.message.reply_text("❌ Please enter number of lines first.")
+        lines = content.splitlines()
+        parts = [lines[i:i + lines_per_file] for i in range(0, len(lines), lines_per_file)]
+        for idx, part in enumerate(parts, 1):
+            part_data = "\n".join(part)
+            bio = io.BytesIO(part_data.encode()); bio.name = f"Part{idx}.txt"
+            await update.message.reply_document(document=bio, caption=f"📁 Part {idx}")
+        return
+
+    # DUPLICATE REMOVER
+    if tool == "dupe":
+        lines = content.splitlines()
+        unique = list(dict.fromkeys(lines))
+        result = "\n".join(unique)
+        bio = io.BytesIO(result.encode()); bio.name = "Cleaned.txt"
+        await update.message.reply_document(bio)
+        return
+
+    # URL CLEANER
+    if tool == "url":
+        import re
+        cleaned = re.sub(r"http\S+", "", content)
+        bio = io.BytesIO(cleaned.encode()); bio.name = "URL_Cleaned.txt"
+        await update.message.reply_document(bio)
+        return
+
+    # FILE processor (generic)
+    if tool == "file":
+        await update.message.reply_text("📂 File received. (No extra processing implemented yet).")
+        return
+
+    await update.message.reply_text("❗ Please choose a tool first (use /start -> Tools Hub).")
+
+# ---------------- NUMBER HANDLER (for divider) ----------------
+async def number_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("await_lines"):
+        text = update.message.text.strip()
+        try:
+            num = int(text)
+            if num <= 0:
+                return await update.message.reply_text("⚠️ Number must be greater than 0.")
+        except:
+            return await update.message.reply_text("❌ Please enter a valid number.")
+        context.user_data["lines_per_file"] = num
+        context.user_data["await_lines"] = False
+        return await update.message.reply_text(f"✅ Divider set to *{num} lines per file*.\nNow send your TXT file.", parse_mode="Markdown")
+    # if not awaiting, ignore or provide help
+    # (optional) respond to normal text:
+    # await update.message.reply_text("Command not recognized. Use /start to open menu.")
         
 # ---------------- RUN BOT ----------------
 def main():
