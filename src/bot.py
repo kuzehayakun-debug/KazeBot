@@ -315,6 +315,48 @@ async def genkey_cmd(update, context):
     )
 
     await update.message.reply_text(msg, parse_mode="Markdown")
+    
+#-----------------------Panel--------------------------
+async def panel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("⛔ Access denied.")
+
+    data = load_keys()
+    users = data.get("users", {})
+    keys = data.get("keys", {})
+
+    if not users:
+        return await update.message.reply_text("📭 No users found.")
+
+    msg = "🛡 *ADMIN PANEL — USERS LIST*\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    for uid, key in users.items():
+        info = keys.get(key, {})
+        exp = info.get("expires_at")
+
+        if exp is None:
+            status = "♾ Lifetime"
+        elif time.time() > exp:
+            status = "❌ Expired"
+        else:
+            remain = int(exp - time.time())
+            h = remain // 3600
+            m = (remain % 3600) // 60
+            status = f"✅ {h}h {m}m"
+
+        msg += (
+            f"👤 *User ID:* `{uid}`\n"
+            f"🔑 *Key:* `{key}`\n"
+            f"⏳ *Status:* {status}\n"
+            "━━━━━━━━━━━━━━\n"
+        )
+
+    for i in range(0, len(msg), 4000):
+        await update.message.reply_text(
+            msg[i:i+4000],
+            parse_mode="Markdown"
+        )
 
 # -------------------- /key --------------------
 async def key_cmd(update, context):
@@ -649,6 +691,7 @@ def main():
     app.add_handler(CommandHandler("mytime", mytime_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("generate", generate_cmd))
+    app.add_handler(CommandHandler("panel", panel_cmd))
 
     # ----- Menu Buttons -----
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))
