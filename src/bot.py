@@ -615,7 +615,7 @@ async def menu_callback(update, context):
         await msg.delete()
 
         # extract
-        content, count = extract_lines(FILE_MAP[choice], 100)
+        content, count = extract_lines(FILE_MAP[choice], 200)
 
         await send_alert(context.bot, user, choice, count)
 
