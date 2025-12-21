@@ -18,8 +18,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hi! Bot is running.")
 
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
     for m in update.message.new_chat_members:
-        await update.effective_chat.send_message(f"Welcome, {m.first_name}!")
+        full = (m.full_name or m.first_name).strip()
+        name_upper = full.upper()
+        msgs = [
+            f"HELLO {name_upper}, WELCOME TO PALARO! 🎮🔥",
+            "THANK YOU FOR JOINING US THIS SEASON!",
+            "KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.",
+            "PLEASE INTRODUCE YOURSELF: AGE, CURRENT RANK, AND TIMEZONE.",
+            "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE: https://t.me/+wkXVYyqiRYplZjk1",
+            "WE RUN WEEKLY TOURNAMENTS WITH EXCITING PRIZES!",
+            "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.",
+        ]
+        for text in msgs:
+            await chat.send_message(text)
+            await asyncio.sleep(0.35)  # maliit na delay para iwas rate limit
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
