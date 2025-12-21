@@ -32,10 +32,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "WE RUN WEEKLY TOURNAMENTS WITH EXCITING PRIZES!",
             "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.",
         ]
-        for text in msgs:
-            await chat.send_message(text)
-            await asyncio.sleep(0.35)
-
+        
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
