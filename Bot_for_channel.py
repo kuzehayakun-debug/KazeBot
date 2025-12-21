@@ -21,25 +21,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     for m in update.message.new_chat_members:
-        full = (m.full_name or m.first_name).strip()
+        full = (m.full_name or m.first_name or "Player").strip()
         name_upper = full.upper()
-        msgs = [
-            f"HELLO {name_upper}, WELCOME TO PALARO! 🎮🔥",
-            "THANK YOU FOR JOINING US THIS SEASON!",
-            "KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.",
-            "PLEASE INTRODUCE YOURSELF: AGE, CURRENT RANK, AND TIMEZONE.",
-            "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE: https://t.me/+wkXVYyqiRYplZjk1",
-            "WE RUN WEEKLY TOURNAMENTS WITH EXCITING PRIZES!",
-            "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.",
-        ]
         
+        welcome_message = (
+            f"HELLO {name_upper}, WELCOME TO PALARO! 🎮🔥\n\n"
+            "THANK YOU FOR JOINING US THIS SEASON!\n"
+            "KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.\n\n"
+            "PLEASE INTRODUCE YOURSELF: AGE, CURRENT RANK, AND TIMEZONE.\n"
+            "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE:\n"
+            "https://t.me/+wkXVYyqiRYplZjk1\n\n"
+            "WE RUN WEEKLY TOURNAMENTS WITH EXCITING PRIZES!\n"
+            "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES."
+        )
+        
+        # Usa ra ka send – limpyo ug gwapo tan-awon!
+        await chat.send_message(welcome_message)
+
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var in Render.")
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
+    
     app = Application.builder().token(token).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    
     app.run_polling()
 
 if __name__ == "__main__":
