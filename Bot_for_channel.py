@@ -1,4 +1,5 @@
 import os
+import asyncio
 from threading import Thread
 from flask import Flask
 from telegram import Update
@@ -33,18 +34,17 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         for text in msgs:
             await chat.send_message(text)
-            await asyncio.sleep(0.35)  # maliit na delay para iwas rate limit
+            await asyncio.sleep(0.35)
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var in Render.")
-
     app = Application.builder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.run_polling()
 
 if __name__ == "__main__":
-    keep_alive()   # start Flask on PORT for Render Web Service
-    main()         # Huwag asyncio.run() dito
+    keep_alive()
+    main()
