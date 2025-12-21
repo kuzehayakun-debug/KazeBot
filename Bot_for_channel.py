@@ -22,21 +22,19 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     for m in update.message.new_chat_members:
         full = (m.full_name or m.first_name or "Player").strip()
-        name_upper = full.upper()
+        
+        # Fancy bold italic name using MarkdownV2
+        fancy_name = f"__*{full}*__"
         
         welcome_message = (
-            f"HELLO {name_upper}, WELCOME TO PALARO! 🎮🔥\n\n"
-            "THANK YOU FOR JOINING US THIS SEASON!\n"
-            "KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.\n\n"
-            "PLEASE INTRODUCE YOURSELF: AGE, CURRENT RANK, AND TIMEZONE.\n"
+            f"HELLO {fancy_name}, WELCOME TO PALARO! 🎮🔥\n\n"
+            "THANK YOU FOR JOINING US THIS SEASON! KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.\n\n"
+            "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.\n\n"
             "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE:\n"
-            "https://t.me/+wkXVYyqiRYplZjk1\n\n"
-            "WE RUN WEEKLY TOURNAMENTS WITH EXCITING PRIZES!\n"
-            "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES."
+            "https://t.me/+wkXVYyqiRYplZjk1"
         )
         
-        # Usa ra ka send – limpyo ug gwapo tan-awon!
-        await chat.send_message(welcome_message)
+        await chat.send_message(welcome_message, parse_mode='MarkdownV2')
 
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
