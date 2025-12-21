@@ -23,19 +23,17 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for m in update.message.new_chat_members:
         full = (m.full_name or m.first_name or "Player").strip()
         
-        # Fancy bold italic name using MarkdownV2
-        fancy_name = f"__*{full}*__"
-        
         welcome_message = (
-            f"HELLO {fancy_name}, WELCOME TO PALARO! 🎮🔥\n\n"
+            f"HELLO {full}, WELCOME TO PALARO! 🎮🔥\n\n"
             "THANK YOU FOR JOINING US THIS SEASON! KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.\n\n"
             "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.\n\n"
             "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE:\n"
             "https://t.me/+wkXVYyqiRYplZjk1"
         )
         
-        await chat.send_message(welcome_message, parse_mode='MarkdownV2')
-
+        # Plain text lang – safe, dili mag-crash
+        await chat.send_message(welcome_message)
+        
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
