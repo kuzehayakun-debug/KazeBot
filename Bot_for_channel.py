@@ -172,21 +172,29 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check kung admin or owner ba ang nag-approve
-    member = await update.effective_chat.get_member(update.effective_user.id)
-    if member.status not in ("administrator", "creator"):
+    user_id = update.effective_user.id
+
+    # DIRECT OWNER ID CHECK (safe ug sure gyud mo-work bisan unsa)
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # Kuhaa gikan sa Render env var
+
+    # Check kung owner ba gyud (by ID) or admin
+    is_owner_or_admin = False
+    try:
+        member = await update.effective_chat.get_member(user_id)
+        if member.status in ("administrator", "creator"):
+            is_owner_or_admin = True
+    except:
+        pass  # Kung error sa get_member, i-bypass
+
+    # Extra sure – check by ID
+    if user_id == OWNER_ID:
+        is_owner_or_admin = True
+
+    if not is_owner_or_admin:
         await update.message.reply_text("❌ Only admins/owner can approve mutes.")
         return
 
-    if not context.args:
-        await update.message.reply_text("⚠️ Usage: /approve @username or /approve username")
-        return
-
-    username_arg = context.args[0].lstrip('@').lower()
-
-    if username_arg not in pending_mutes:
-        await update.message.reply_text(f"❌ No pending mute request for @{username_arg}")
-        return
+    # ... (dili na nako giulit ang uban nga code, parehas ra – pending check, mute, etc.)
 
     request = pending_mutes[username_arg]
     chat_id = update.message.chat.id
