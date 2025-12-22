@@ -16,8 +16,18 @@ def keep_alive():
     Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi! Bot is running.")
-
+    user = update.effective_user
+    full_name = user.full_name.strip() if user.full_name else "Player"
+    
+    start_message = (
+        f"HI {full_name.upper()}, I'M KAZEBOT! 🤖\n\n"
+        "WELCOME TO PALARO!\n"
+        "Type /help to see what I can do.\n"
+        "Please stay active and cooperative.\n\n"
+        "Good luck and have fun! 🔥😁"
+    )
+    
+    await update.message.reply_text(start_message)
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     for m in update.message.new_chat_members:
