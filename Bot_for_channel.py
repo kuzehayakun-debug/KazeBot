@@ -190,22 +190,84 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id == OWNER_ID:
         is_owner_or_admin = True
 
-    if not is_owner_or_admin:
+# Global pending mutes (case-insensitive)
+pending_mutes = {}
+
+async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /mute @username or /mute username [duration]\nExample: /mute @noisyplayer 6h")
+        return
+
+    username_arg = context.args[0].lstrip('@').lower()  # Lowercase para consistent
+    duration = timedelta(hours=1)
+    duration_text = "1 hour"
+
+    if len(context.args) > 1:
+        arg = context.args[1].lower()
+        try:
+            if arg.endswith('h'):
+                hours = int(arg[:-1])
+                duration = timedelta(hours=hours)
+                duration_text = f"{hours} hour{'s' if hours > 1 else ''}"
+            elif arg.endswith('d'):
+                days = int(arg[:-1])
+                duration = timedelta(days=days)
+                duration_text = f"{days} day{'s' if days > 1 else ''}"
+        except:
+            await update.message.reply_text("⚠️ Invalid duration. Use h or d.")
+            return
+
+    requester_name = update.effective_user.full_name or "Member"
+
+    # Save pending (lowercase key)
+    pending_mutes[username_arg] = {
+        'requester': requester_name,
+        'duration': duration,
+        'duration_text': duration_text,
+        'original_username': context.args[0].lstrip('@')  # Para ma-display og original case
+    }
+
+    await update.message.reply_text(
+        f"📩 Mute request for @{pending_mutes[username_arg]['original_username']} ({duration_text}) sent to admins.\n"
+        f"Requested by: {requester_name}\nWaiting for approval..."
+    )
+
+async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.message.chat.id
+
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+
+    is_authorized = (user_id == OWNER_ID)
+    if not is_authorized:
+        try:
+            member = await context.bot.get_chat_member(chat_id, user_id)
+            is_authorized = member.status in ("administrator", "creator")
+        except:
+            pass
+
+    if not is_authorized:
         await update.message.reply_text("❌ Only admins/owner can approve mutes.")
         return
 
-    # ... (dili na nako giulit ang uban nga code, parehas ra – pending check, mute, etc.)
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /approve @username or /approve username")
+        return
+
+    username_arg = context.args[0].lstrip('@').lower()
+
+    if username_arg not in pending_mutes:
+        await update.message.reply_text(f"❌ No pending mute request for @{context.args[0].lstrip('@')}")
+        return
 
     request = pending_mutes[username_arg]
-    chat_id = update.message.chat.id
+    original_username = request['original_username']
 
     try:
-        # Kuhaa ang user ID base sa username
-        target_member = await context.bot.get_chat_member(chat_id, f"@{username_arg}")
+        target_member = await context.bot.get_chat_member(chat_id, f"@{original_username}")
         target_user = target_member.user
-        target_name = target_user.full_name or target_user.username
+        target_name = target_user.full_name or original_username
 
-        # Actual mute
         await context.bot.restrict_chat_member(
             chat_id=chat_id,
             user_id=target_user.id,
@@ -220,17 +282,15 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            f"🔇 @{username_arg} ({target_name}) has been muted for {request['duration_text']}.\n"
-            f"Approved by: {update.effective_user.full_name}\n"
-            f"Originally requested by: {request['requester']}"
+            f"🔇 @{original_username} ({target_name}) muted for {request['duration_text']}.\n"
+            f"Approved by: {update.effective_user.full_name}"
         )
 
-        # Tanggalon ang pending request
         del pending_mutes[username_arg]
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to mute @{username_arg}. User may have left or I lack permission.")
-
+        await update.message.reply_text(f"❌ Failed to mute @{original_username}. User may have left or bot lacks permission.")
+        
 # Optional: Auto-notify admins kung naay pending request pag mo-join or mo-send message
 async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     member = update.effective_user
