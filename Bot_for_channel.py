@@ -151,8 +151,7 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "duration_minutes": int(duration.total_seconds() / 60),
             "duration_text": duration_text,
             "requested_by": requester_name,
-            "status": "pending",
-            "created_at": "now()"
+            "status": "pending"
         }).execute()
 
         await update.message.reply_text(
@@ -166,7 +165,6 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.message.chat.id
-    username = update.effective_user.username or update.effective_user.first_name
     
     is_authorized = False
     
@@ -191,7 +189,7 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username_arg = context.args[0].lstrip('@').lower()
     
     try:
-        response = await supabase.table("mute_requests")\
+        response = supabase.table("mute_requests")\
             .select("*")\
             .eq("username", username_arg)\
             .eq("status", "pending")\
@@ -223,7 +221,7 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
             until_date=int(time.time() + (duration_minutes * 60))
         )
         
-        await supabase.table("mute_requests")\
+        supabase.table("mute_requests")\
             .update({"status": "approved"})\
             .eq("id", request["id"])\
             .execute()
@@ -246,7 +244,7 @@ async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_member = await update.effective_chat.get_member(member.id)
         
         if chat_member.status in ("administrator", "creator"):
-            response = await supabase.table("mute_requests")\
+            response = supabase.table("mute_requests")\
                 .select("original_username")\
                 .eq("status", "pending")\
                 .execute()
@@ -282,4 +280,4 @@ def main():
 if __name__ == "__main__":
     keep_alive()
     main()
-                
+    
