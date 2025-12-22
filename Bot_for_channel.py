@@ -256,3 +256,7 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.MY_CHAT_MEMBER | filters.ALL, notify_pending))
     
     app.run_polling()
+
+if __name__ == "__main__":
+    keep_alive()
+    main()
