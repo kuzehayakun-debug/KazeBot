@@ -73,7 +73,7 @@ async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         if msg_is_forwarded(msg) and msg_has_link(msg):
             await msg.delete()
-            warn = await msg.chat.send_message("⚠️ Links and forwarded messages are not allowed to prevent ads/spam.")
+            warn = await msg.chat.send_message("⚠️ Links forwarded messages are not allowed to prevent ads/spam.")
             await asyncio.sleep(5)
             try:
                 await warn.delete()
@@ -83,17 +83,21 @@ async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TY
         # Optional: log e
         pass
 
-async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def block_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg:
         return
+
+    # (optional) huwag i-delete links galing sa admins
+    member = await context.bot.get_chat_member(msg.chat.id, msg.from_user.id)
+    if member.status in ("administrator", "creator"):
+        return
+
     try:
-        if msg_is_forwarded(msg) and msg_has_link(msg):
+        if msg_has_link(msg):   # kahit hindi forwarded
             await msg.delete()
-
-            warn = await msg.chat.send_message("❌Forwarded messages are not allowed kupal.")
-            await asyncio.sleep(5)  # optional auto-delete ng warning
-
+            warn = await msg.chat.send_message("Links are not allowed.")
+            await asyncio.sleep(5)
             try:
                 await warn.delete()
             except:
@@ -111,7 +115,7 @@ def main():
     app = Application.builder().token(token).build()
 
     # Unahin ang moderation handler (group=0)
-    app.add_handler(MessageHandler(filters.ALL, block_forwarded_links), group=0)
+    app.add_handler(MessageHandler(filters.ALL, block_links), group=0)  # Para sa blocking ng links
 
     # Iba pang handlers (group=1+)
     app.add_handler(CommandHandler("start", start), group=1)
