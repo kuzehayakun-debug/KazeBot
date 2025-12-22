@@ -1,3 +1,4 @@
+import time
 import os
 import re
 import asyncio
@@ -54,143 +55,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await chat.send_message(welcome_message, disable_web_page_preview=True)
 
-
-# -------------------- Moderation Helpers --------------------
-def msg_is_forwarded(msg) -> bool:
-    return bool(
-        getattr(msg, "forward_origin", None)
-        or getattr(msg, "forward_date", None)
-        or getattr(msg, "forward_from", None)
-        or getattr(msg, "forward_from_chat", None)
-        or getattr(msg, "forward_sender_name", None)
-    )
-
-def msg_has_link(msg) -> bool:
-    text = (msg.text or msg.caption or "")[:4096]
-    t = text.lower()
-
-    # common link patterns
-    if re.search(r"(https?://|www\.|t\.me/|telegram\.me/)", t):
-        return True
-
-    # plain domains without http(s), ex: google.com
-    if re.search(r"\b[a-z0-9-]+\.(com|net|org|io|co|me|gg|app|xyz|site|dev|ph)\b", t):
-        return True
-
-    # telegram entities (clickable links)
-    entities = (msg.entities or []) + (msg.caption_entities or [])
-    for e in entities:
-        if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
-            return True
-
-    return False
-
-async def send_temp_warning(chat, text: str, seconds: int = 5):
-    warn = await chat.send_message(text)
-    await asyncio.sleep(seconds)
-    try:
-        await warn.delete()
-    except Exception:
-        pass
-
-
-async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg or not msg.from_user:
-        return
-
-    user_id = msg.from_user.id
-
-    # OWNER exception: ikaw pwede mag-forward at mag-link
-    if OWNER_ID and user_id == OWNER_ID:
-        return
-
-    # Optional: if you want admins also allowed, uncomment below:
-    # member = await context.bot.get_chat_member(msg.chat.id, user_id)
-    # if member.status in ("administrator", "creator"):
-    #     return
-
-    try:
-        # delete forwarded messages
-        if msg_is_forwarded(msg):
-            await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
-            return
-
-        # delete link messages (kahit normal chat)
-        if msg_has_link(msg):
-            await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
-            return
-
-    except Exception as e:
-        print("moderate error:", e)
-
-
-from datetime import timedelta
-
-# Global storage para sa pending mute requests (simple dict: username -> requester)
-pending_mutes = {}
-
-async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("⚠️ Usage: /mute @username or /mute username [duration]\nExample: /mute @noisyplayer or /mute @noisyplayer 6h")
-        return
-
-    username_arg = context.args[0].lstrip('@')
-    duration_text = "1 hour"  # Default
-    duration = timedelta(hours=1)
-
-    if len(context.args) > 1:
-        arg = context.args[1].lower()
-        try:
-            if arg.endswith('h'):
-                hours = int(arg[:-1])
-                duration = timedelta(hours=hours)
-                duration_text = f"{hours} hour{'s' if hours > 1 else ''}"
-            elif arg.endswith('d'):
-                days = int(arg[:-1])
-                duration = timedelta(days=days)
-                duration_text = f"{days} day{'s' if days > 1 else ''}"
-        except:
-            await update.message.reply_text("⚠️ Invalid duration. Use h or d (e.g. 6h, 2d)")
-            return
-
-    requester_name = update.effective_user.full_name or update.effective_user.username
-
-    # Save pending request
-    pending_mutes[username_arg.lower()] = {
-        'requester': requester_name,
-        'duration': duration,
-        'duration_text': duration_text
-    }
-
-    await update.message.reply_text(
-        f"📩 Mute request for @{username_arg} ({duration_text}) has been sent to admins.\n"
-        f"Requested by: {requester_name}\n"
-        "Waiting for approval..."
-    )
-
-async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-
-    # DIRECT OWNER ID CHECK (safe ug sure gyud mo-work bisan unsa)
-    OWNER_ID = int(os.getenv("OWNER_ID", "0"))  # Kuhaa gikan sa Render env var
-
-    # Check kung owner ba gyud (by ID) or admin
-    is_owner_or_admin = False
-    try:
-        member = await update.effective_chat.get_member(user_id)
-        if member.status in ("administrator", "creator"):
-            is_owner_or_admin = True
-    except:
-        pass  # Kung error sa get_member, i-bypass
-
-    # Extra sure – check by ID
-    if user_id == OWNER_ID:
-        is_owner_or_admin = True
-
-# Global pending mutes (case-insensitive)
+# Global pending mutes (lowercase keys para consistent)
 pending_mutes = {}
 
 async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -198,7 +63,9 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Usage: /mute @username or /mute username [duration]\nExample: /mute @noisyplayer 6h")
         return
 
-    username_arg = context.args[0].lstrip('@').lower()  # Lowercase para consistent
+    original_username = context.args[0].lstrip('@')  # Original case for display
+    username_key = original_username.lower()  # Lowercase for storage
+
     duration = timedelta(hours=1)
     duration_text = "1 hour"
 
@@ -219,16 +86,16 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     requester_name = update.effective_user.full_name or "Member"
 
-    # Save pending (lowercase key)
-    pending_mutes[username_arg] = {
+    # Save pending request (lowercase key)
+    pending_mutes[username_key] = {
+        'original_username': original_username,
         'requester': requester_name,
         'duration': duration,
-        'duration_text': duration_text,
-        'original_username': context.args[0].lstrip('@')  # Para ma-display og original case
+        'duration_text': duration_text
     }
 
     await update.message.reply_text(
-        f"📩 Mute request for @{pending_mutes[username_arg]['original_username']} ({duration_text}) sent to admins.\n"
+        f"📩 Mute request for @{original_username} ({duration_text}) sent to admins.\n"
         f"Requested by: {requester_name}\nWaiting for approval..."
     )
 
@@ -236,38 +103,45 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.message.chat.id
 
+    # OWNER ID CHECK (gikan sa Render env var – sure gyud ni!)
     OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
-    is_authorized = (user_id == OWNER_ID)
-    if not is_authorized:
+    # Owner always allowed (direct ID check – bypass everything)
+    if user_id == OWNER_ID:
+        is_authorized = True
+    else:
+        # Fallback admin check
         try:
             member = await context.bot.get_chat_member(chat_id, user_id)
             is_authorized = member.status in ("administrator", "creator")
         except:
-            pass
+            is_authorized = False
 
     if not is_authorized:
-        await update.message.reply_text("❌ Only admins/owner can approve mutes.")
+        await update.message.reply_text("❌ Only admins or owner can approve mutes.")
         return
 
     if not context.args:
         await update.message.reply_text("⚠️ Usage: /approve @username or /approve username")
         return
 
-    username_arg = context.args[0].lstrip('@').lower()
+    original_username = context.args[0].lstrip('@')
+    username_key = original_username.lower()
 
-    if username_arg not in pending_mutes:
-        await update.message.reply_text(f"❌ No pending mute request for @{context.args[0].lstrip('@')}")
+    if username_key not in pending_mutes:
+        await update.message.reply_text(f"❌ No pending mute request for @{original_username}")
         return
 
-    request = pending_mutes[username_arg]
-    original_username = request['original_username']
+    request = pending_mutes[username_key]
+    target_username = request['original_username']
 
     try:
-        target_member = await context.bot.get_chat_member(chat_id, f"@{original_username}")
+        # Get target user (use original case with @)
+        target_member = await context.bot.get_chat_member(chat_id, f"@{target_username}")
         target_user = target_member.user
-        target_name = target_user.full_name or original_username
+        target_name = target_user.full_name or target_username
 
+        # MUTE THE USER
         await context.bot.restrict_chat_member(
             chat_id=chat_id,
             user_id=target_user.id,
@@ -282,14 +156,16 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            f"🔇 @{original_username} ({target_name}) muted for {request['duration_text']}.\n"
-            f"Approved by: {update.effective_user.full_name}"
+            f"🔇 @{target_username} ({target_name}) has been muted for {request['duration_text']}.\n"
+            f"Approved by: {update.effective_user.full_name}\n"
+            f"Requested by: {request['requester']}"
         )
 
-        del pending_mutes[username_arg]
+        # Remove from pending
+        del pending_mutes[username_key]
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Failed to mute @{original_username}. User may have left or bot lacks permission.")
+        await update.message.reply_text(f"❌ Failed to mute @{target_username}. User may have left the group or bot lacks permission.\nError: {str(e)}")
         
 # Optional: Auto-notify admins kung naay pending request pag mo-join or mo-send message
 async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
