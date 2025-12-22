@@ -45,7 +45,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await chat.send_message(welcome_message)
 
-# ===== ANTI-SPAM: AUTO DELETE LINKS & FORWARDED MESSAGES (EXCEPT OWNER) =====
+# ===== ANTI-SPAM: AUTO DELETE LINKS & FORWARDED MESSAGES (SAFE & NO CRASH) =====
 async def anti_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -53,39 +53,47 @@ async def anti_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = msg.from_user.id
 
-    # Kuhaa ang OWNER_ID gikan sa Render environment variable (safe gyud ni!)
-    OWNER_ID = int(os.getenv("BOT_OWNER_ID", "0"))  # Default 0 kung wala
+    # Kuhaa ang OWNER_ID gikan sa Render env var
+    OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
-    # Exempt ang owner – ikaw ra pwede mag-link ug mag-forward
+    # Exempt ang owner
     if user_id == OWNER_ID:
         return
 
-    # Check kung forwarded message
-    is_forwarded = bool(
-        msg.forward_origin or
-        msg.forward_from or
-        msg.forward_from_chat or
-        msg.forward_sender_name
-    )
+    try:
+        # Check kung forwarded message
+        is_forwarded = bool(
+            msg.forward_origin or
+            msg.forward_from or
+            msg.forward_from_chat or
+            msg.forward_sender_name
+        )
 
-    # Check kung naay link
-    has_link = False
-    text = (msg.text or msg.caption or "")
-    if re.search(r"https?://|www\.|t\.me/", text, re.IGNORECASE):
-        has_link = True
-    entities = (msg.entities or []) + (msg.caption_entities or [])
-    for entity in entities:
-        if entity.type in ("url", "text_link"):
+        # Check kung naay link
+        has_link = False
+        text = (msg.text or msg.caption or "")
+        if re.search(r"https?://|www\.|t\.me/", text, re.IGNORECASE):
             has_link = True
-            break
 
-    # Kung forwarded or naay link → auto delete (silent lang)
-    if is_forwarded or has_link:
-        try:
+        # Safe nga entity check (dili mag-crash kung walay caption_entities)
+        entities = (msg.entities or [])
+        if hasattr(msg, "caption_entities") and msg.caption_entities:
+            entities += msg.caption_entities
+
+        for entity in entities:
+            if entity.type in ("url", "text_link"):
+                has_link = True
+                break
+
+        # Kung forwarded or naay link → silent delete
+        if is_forwarded or has_link:
             await msg.delete()
-        except:
-            pass  # Kung dili pwede i-delete
 
+    except Exception as e:
+        # Dili mag-crash ang bot bisan naay error
+        print(f"Anti-spam error (ignored): {e}")
+
+# ===== SA MAIN() – parehas ra gihapon =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -93,11 +101,10 @@ def main():
     
     app = Application.builder().token(token).build()
     
-    # Regular handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     
-    # ANTI-SPAM HANDLER – delete links & forwarded messages (except owner)
+    # Anti-spam handler
     app.add_handler(MessageHandler(
         filters.TEXT | filters.CAPTION | filters.FORWARDED,
         anti_spam
