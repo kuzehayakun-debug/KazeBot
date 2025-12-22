@@ -9,14 +9,17 @@ from telegram import Update
 from telegram.constants import MessageEntityType
 from telegram.error import BadRequest
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from Bolt Database import create_client
 
 app_web = Flask(__name__)
 
-# OWNER_ID from Render environment variable
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+# Bolt Database setup
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+Bolt Database = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Global storage for pending mute requests
-pending_mutes = {}
+# OWNER_ID from environment variable
+OWNER_ID = int(os.getenv("OWNER_ID", "0"))
 
 @app_web.route("/")
 def home():
@@ -30,11 +33,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     full_name = user.full_name.strip() if user and user.full_name else "Player"
     start_message = (
-        f"HI {full_name.upper()}, I'M KAZEBOT! 🤖\n\n"
+        f"HI {full_name.upper()}, I'M KAZEBOT!\n\n"
         "WELCOME TO PALARO!\n"
         "Type /help to see what I can do.\n"
         "Please stay active and cooperative.\n\n"
-        "Good luck and have fun! 🔥😁"
+        "Good luck and have fun!"
     )
     await update.message.reply_text(start_message)
 
@@ -47,7 +50,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for m in msg.new_chat_members:
         full = (m.full_name or m.first_name or "Player").strip()
         welcome_message = (
-            f"HELLO {full}, WELCOME TO PALARO! 🎮🔥\n\n"
+            f"HELLO {full}, WELCOME TO PALARO!\n\n"
             "THANK YOU FOR JOINING US THIS SEASON! KINDLY REVIEW THE PINNED RULES BEFORE PROCEEDING.\n\n"
             "STAY ACTIVE AND FOLLOW ANNOUNCEMENTS FOR UPDATES.\n\n"
             "IF YOU HAVEN'T JOINED OUR MAIN CHANNEL YET, PLEASE JOIN HERE:\n"
@@ -55,7 +58,6 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await chat.send_message(welcome_message, disable_web_page_preview=True)
 
-# -------------------- Moderation Helpers --------------------
 def msg_is_forwarded(msg) -> bool:
     return bool(
         getattr(msg, "forward_origin", None)
@@ -97,18 +99,15 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = msg.from_user.id
 
-    # OWNER exception
     if OWNER_ID and user_id == OWNER_ID:
         return
 
     try:
-        # Delete forwarded messages
         if msg_is_forwarded(msg):
             await msg.delete()
             await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
             return
 
-        # Delete link messages
         if msg_has_link(msg):
             await msg.delete()
             await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
@@ -117,7 +116,6 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print("moderate error:", e)
 
-# -------------------- Mute System --------------------
 async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("⚠️ Usage: /mute @username [duration]\nExample: /mute @noisyplayer 6h")
@@ -143,44 +141,43 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
     requester_name = update.effective_user.full_name or "Member"
+    original_username = context.args[0].lstrip('@')
 
-    pending_mutes[username_arg] = {
-        'requester': requester_name,
-        'duration': duration,
-        'duration_text': duration_text,
-        'original_username': context.args[0].lstrip('@')
-    }
+    try:
+        await supabase.table("mute_requests").insert({
+            "group_id": update.effective_chat.id,
+            "username": username_arg,
+            "original_username": original_username,
+            "duration_minutes": int(duration.total_seconds() / 60),
+            "duration_text": duration_text,
+            "requested_by": requester_name,
+            "status": "pending",
+            "created_at": "now()"
+        }).execute()
 
-    await update.message.reply_text(
-        f"📩 Mute request for @{pending_mutes[username_arg]['original_username']} ({duration_text}) sent to admins.\n"
-        f"Requested by: {requester_name}\nWaiting for approval..."
-    )
+        await update.message.reply_text(
+            f"📩 Mute request for @{original_username} ({duration_text}) sent to admins.\n"
+            f"Requested by: {requester_name}\nWaiting for approval..."
+        )
+    except Exception as e:
+        print(f"Error storing mute request: {e}")
+        await update.message.reply_text("❌ Failed to submit mute request.")
 
 async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.message.chat.id
     username = update.effective_user.username or update.effective_user.first_name
     
-    print(f"DEBUG: approve_mute called by user_id={user_id}, username={username}")
-    print(f"DEBUG: OWNER_ID={OWNER_ID}")
-    
-    # Check authorization
     is_authorized = False
     
-    # Check if OWNER
     if OWNER_ID and user_id == OWNER_ID:
         is_authorized = True
-        print(f"DEBUG: User {username} is OWNER")
     else:
-        # Check if ADMIN
         try:
             member = await context.bot.get_chat_member(chat_id, user_id)
-            print(f"DEBUG: User status = {member.status}")
             is_authorized = member.status in ("administrator", "creator")
-            if is_authorized:
-                print(f"DEBUG: User {username} is admin/creator")
         except Exception as e:
-            print(f"DEBUG: Error checking member: {e}")
+            print(f"Error checking member: {e}")
             is_authorized = False
     
     if not is_authorized:
@@ -193,14 +190,24 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     username_arg = context.args[0].lstrip('@').lower()
     
-    if username_arg not in pending_mutes:
-        await update.message.reply_text(f"❌ No pending mute request for that user.")
-        return
-    
-    request = pending_mutes[username_arg]
-    
     try:
-        user_chat = await context.bot.get_chat(f"@{request['original_username']}")
+        response = await supabase.table("mute_requests")\
+            .select("*")\
+            .eq("username", username_arg)\
+            .eq("status", "pending")\
+            .maybeSingle()\
+            .execute()
+        
+        if not response.data:
+            await update.message.reply_text(f"❌ No pending mute request for that user.")
+            return
+        
+        request = response.data
+        original_username = request['original_username']
+        duration_minutes = request['duration_minutes']
+        duration_text = request['duration_text']
+        
+        user_chat = await context.bot.get_chat(f"@{original_username}")
         target_user_id = user_chat.id
         
         await context.bot.restrict_chat_member(
@@ -213,85 +220,46 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'can_send_other_messages': False,
                 'can_add_web_page_previews': False,
             },
-            until_date=int(time.time() + request['duration'].total_seconds())
+            until_date=int(time.time() + (duration_minutes * 60))
         )
         
+        await supabase.table("mute_requests")\
+            .update({"status": "approved"})\
+            .eq("id", request["id"])\
+            .execute()
+        
         await update.message.reply_text(
-            f"🔇 @{request['original_username']} muted for {request['duration_text']}.\n"
+            f"🔇 @{original_username} muted for {duration_text}.\n"
             f"Approved by: {update.effective_user.full_name}"
         )
         
-        del pending_mutes[username_arg]
-        print(f"DEBUG: Successfully muted @{request['original_username']}")
-        
     except BadRequest as e:
-        print(f"DEBUG: BadRequest - {e}")
-        await update.message.reply_text(f"❌ Cannot find user @{request['original_username']}")
+        print(f"BadRequest - {e}")
+        await update.message.reply_text(f"❌ Cannot find or mute user. Check bot permissions.")
     except Exception as e:
-        print(f"DEBUG: Error muting: {e}")
-        await update.message.reply_text(f"❌ Failed to mute. Check bot permissions.")
+        print(f"Error approving mute: {e}")
+        await update.message.reply_text(f"❌ Failed to approve mute.")
 
 async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     member = update.effective_user
     try:
         chat_member = await update.effective_chat.get_member(member.id)
         
-        if chat_member.status in ("administrator", "creator") and pending_mutes:
-            pending_list = "\n".join([f"- @{req['original_username']}" for req in pending_mutes.values()])
-            await update.message.reply_text(
-                f"👮 Admin alert! There are pending mute requests:\n{pending_list}\n"
-                "Use /approve @username to approve."
-            )
-    except:
-        pass
+        if chat_member.status in ("administrator", "creator"):
+            response = await supabase.table("mute_requests")\
+                .select("original_username")\
+                .eq("status", "pending")\
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                pending_list = "\n".join([f"- @{req['original_username']}" for req in response.data])
+                await update.message.reply_text(
+                    f"👮 Admin alert! There are pending mute requests:\n{pending_list}\n"
+                    "Use /approve @username to approve."
+                )
+    except Exception as e:
+        print(f"Error notifying pending: {e}")
 
-from Bolt Database import create_client
-import os
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
-Bolt Database = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ... your existing validation code ...
-    
-    # Store in Bolt Database instead of memory
-    await supabase.table("mute_requests").insert({
-        "group_id": update.effective_chat.id,
-        "username": username,
-        "user_id": user_id or None,
-        "duration": duration,
-        "requested_by": update.effective_user.username or str(update.effective_user.id),
-        "status": "pending"
-    }).execute()
-    
-    await update.message.reply_text(f"Mute request for @{username} ({duration}) sent to admins.\nWaiting for approval...")
-
-async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    username = context.args[0].lstrip('@')
-    
-    # Find pending request
-    response = await supabase.table("mute_requests")\
-        .select("*")\
-        .eq("username", username)\
-        .eq("status", "pending")\
-        .maybeSingle()\
-        .execute()
-    
-    if not response.data:
-        await update.message.reply_text(f"Cannot find pending mute request for @{username}")
-        return
-    
-    request = response.data
-    # ... execute mute ...
-    
-    # Mark as approved
-    await supabase.table("mute_requests")\
-        .update({"status": "approved"})\
-        .eq("id", request["id"])\
-        .execute()
-
-# ===== MAIN =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -299,21 +267,14 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("mute", mute_request))
     app.add_handler(CommandHandler("approve", approve_mute))
-
-    # Welcome new members
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-
-    # Moderation (anti-spam/link)
     app.add_handler(MessageHandler(
         (filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND,
         moderate
     ))
-
-    # Notify admins of pending
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, notify_pending))
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
@@ -321,4 +282,4 @@ def main():
 if __name__ == "__main__":
     keep_alive()
     main()
-    
+                
