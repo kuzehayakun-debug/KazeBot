@@ -43,7 +43,42 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Plain text lang – safe, dili mag-crash
         await chat.send_message(welcome_message)
-        
+
+async def anti_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.message
+    user_id = update.effective_user.id
+
+    # Check kung naay link or forwarded
+    has_link = False
+    if message.text and ("http://" in message.text or "https://" in message.text or "t.me/" in message.text):
+        has_link = True
+    if message.caption and ("http://" in message.caption or "https://" in message.caption or "t.me/" in message.caption):
+        has_link = True
+    if message.forward_from or message.forward_from_chat:
+        has_link = True  # Treat forwarded as spam din
+
+    if has_link:
+        # Delete ang original message
+        await message.delete()
+
+        # Check kung first offense ba
+        if context.user_data.get('spam_warning_sent', False):
+            # Second+ offense → silent delete lang (wala nay warning)
+            return
+        else:
+            # First offense → send warning
+            warning = await context.bot.send_message(
+                chat_id=message.chat_id,
+                text="⚠️ Links and forwarded messages are not allowed to prevent ads/spam.",
+                reply_to_message_id=None
+            )
+            # Mark nga na-send na ang warning ani nga user
+            context.user_data['spam_warning_sent'] = True
+
+            # Auto-delete ang warning human 3 seconds
+            await asyncio.sleep(3)
+            await warning.delete()
+            
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -53,6 +88,13 @@ def main():
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    
+    # ===== ANTI-SPAM / ANTI-LINK FEATURE =====
+    # Delete messages with links OR forwarded messages
+    app.add_handler(MessageHandler(
+        (filters.TEXT | filters.CAPTION) & filters.Regex(r"https?://|t\.me/") | filters.FORWARDED,
+        anti_spam
+    ))
     
     app.run_polling()
 
