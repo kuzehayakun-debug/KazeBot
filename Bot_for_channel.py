@@ -159,14 +159,28 @@ async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     chat_id = update.message.chat.id
+    username = update.effective_user.username or update.effective_user.first_name
+    
+    print(f"DEBUG: approve_mute called by user_id={user_id}, username={username}")
+    print(f"DEBUG: OWNER_ID={OWNER_ID}")
     
     # Check authorization
-    is_authorized = (user_id == OWNER_ID)
-    if not is_authorized:
+    is_authorized = False
+    
+    # Check if OWNER
+    if OWNER_ID and user_id == OWNER_ID:
+        is_authorized = True
+        print(f"DEBUG: User {username} is OWNER")
+    else:
+        # Check if ADMIN
         try:
             member = await context.bot.get_chat_member(chat_id, user_id)
+            print(f"DEBUG: User status = {member.status}")
             is_authorized = member.status in ("administrator", "creator")
-        except:
+            if is_authorized:
+                print(f"DEBUG: User {username} is admin/creator")
+        except Exception as e:
+            print(f"DEBUG: Error checking member: {e}")
             is_authorized = False
     
     if not is_authorized:
@@ -186,7 +200,6 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     request = pending_mutes[username_arg]
     
     try:
-        # Get user by username
         user_chat = await context.bot.get_chat(f"@{request['original_username']}")
         target_user_id = user_chat.id
         
@@ -209,11 +222,13 @@ async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         del pending_mutes[username_arg]
+        print(f"DEBUG: Successfully muted @{request['original_username']}")
         
-    except BadRequest:
+    except BadRequest as e:
+        print(f"DEBUG: BadRequest - {e}")
         await update.message.reply_text(f"❌ Cannot find user @{request['original_username']}")
     except Exception as e:
-        print(f"Error muting: {e}")
+        print(f"DEBUG: Error muting: {e}")
         await update.message.reply_text(f"❌ Failed to mute. Check bot permissions.")
 
 async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
