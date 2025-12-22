@@ -1,8 +1,10 @@
 import os
+import re
 import asyncio
 from threading import Thread
 from flask import Flask
 from telegram import Update
+from telegram.constants import MessageEntityType
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 app_web = Flask(__name__)
@@ -20,7 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     full_name = user.full_name.strip() if user.full_name else "Player"
     
     start_message = (
-        f"HI {full_name.upper()}, I'M KAZEBOT! 🤖\n\n"
+        f"HELLO {full}, I'M KAZEBOT! 🤖\n\n"
         "WELCOME TO PALARO!\n"
         "Type /help to see what I can do.\n"
         "Please stay active and cooperative.\n\n"
@@ -44,60 +46,60 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Plain text lang – safe, dili mag-crash
         await chat.send_message(welcome_message)
 
-async def anti_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = update.message
-    user_id = update.effective_user.id
+# -------- Anti-forwarded-links --------
+def msg_is_forwarded(msg) -> bool:
+    return bool(
+        getattr(msg, "forward_origin", None)
+        or msg.forward_date
+        or msg.forward_from
+        or msg.forward_from_chat
+        or msg.forward_sender_name
+    )
 
-    # Check kung naay link or forwarded
-    has_link = False
-    if message.text and ("http://" in message.text or "https://" in message.text or "t.me/" in message.text):
-        has_link = True
-    if message.caption and ("http://" in message.caption or "https://" in message.caption or "t.me/" in message.caption):
-        has_link = True
-    if message.forward_from or message.forward_from_chat:
-        has_link = True  # Treat forwarded as spam din
+def msg_has_link(msg) -> bool:
+    text = (msg.text or msg.caption or "")[:4096]
+    if re.search(r"(https?://|www\.)", text, re.I):
+        return True
+    entities = (msg.entities or []) + (msg.caption_entities or [])
+    for e in entities:
+        if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
+            return True
+    return False
 
-    if has_link:
-        # Delete ang original message
-        await message.delete()
+async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg:
+        return
+    try:
+        if msg_is_forwarded(msg) and msg_has_link(msg):
+            await msg.delete()
+            warn = await msg.chat.send_message("Forwarded links are not allowed. Message removed.")
+            await asyncio.sleep(5)
+            try:
+                await warn.delete()
+            except:
+                pass
+    except Exception as e:
+        # Optional: log e
+        pass
+# -------------------------------------
 
-        # Check kung first offense ba
-        if context.user_data.get('spam_warning_sent', False):
-            # Second+ offense → silent delete lang (wala nay warning)
-            return
-        else:
-            # First offense → send warning
-            warning = await context.bot.send_message(
-                chat_id=message.chat_id,
-                text="⚠️ Links and forwarded messages are not allowed to prevent ads/spam.",
-                reply_to_message_id=None
-            )
-            # Mark nga na-send na ang warning ani nga user
-            context.user_data['spam_warning_sent'] = True
-
-            # Auto-delete ang warning human 3 seconds
-            await asyncio.sleep(3)
-            await warning.delete()
-            
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
-    
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var in Render.")
+
     app = Application.builder().token(token).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    
-    # ===== ANTI-SPAM / ANTI-LINK FEATURE =====
-    # Delete messages with links OR forwarded messages
-    app.add_handler(MessageHandler(
-        (filters.TEXT | filters.CAPTION) & filters.Regex(r"https?://|t\.me/") | filters.FORWARDED,
-        anti_spam
-    ))
-    
+
+    # Unahin ang moderation handler (group=0)
+    app.add_handler(MessageHandler(filters.ALL, block_forwarded_links), group=0)
+
+    # Iba pang handlers (group=1+)
+    app.add_handler(CommandHandler("start", start), group=1)
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
+
     app.run_polling()
 
 if __name__ == "__main__":
-    keep_alive()
+    keep_alive()  # kung Web Service ka sa Render
     main()
