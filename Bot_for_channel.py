@@ -110,19 +110,16 @@ async def block_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var in Render.")
-
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
+    
     app = Application.builder().token(token).build()
-
-    # Unahin ang moderation handler (group=0)
-    app.add_handler(MessageHandler(filters.ALL, block_links), group=0)  # Para sa blocking ng links
-
-    # Iba pang handlers (group=1+)
-    app.add_handler(CommandHandler("start", start), group=1)
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
-
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    app.add_handler(MessageHandler(filters.ALL, block_links), group=0)
+    
     app.run_polling()
 
 if __name__ == "__main__":
-    keep_alive()  # kung Web Service ka sa Render
+    keep_alive()
     main()
