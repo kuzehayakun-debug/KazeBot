@@ -245,6 +245,52 @@ async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         pass
 
+from Bolt Database import create_client
+import os
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+Bolt Database = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # ... your existing validation code ...
+    
+    # Store in Bolt Database instead of memory
+    await supabase.table("mute_requests").insert({
+        "group_id": update.effective_chat.id,
+        "username": username,
+        "user_id": user_id or None,
+        "duration": duration,
+        "requested_by": update.effective_user.username or str(update.effective_user.id),
+        "status": "pending"
+    }).execute()
+    
+    await update.message.reply_text(f"Mute request for @{username} ({duration}) sent to admins.\nWaiting for approval...")
+
+async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = context.args[0].lstrip('@')
+    
+    # Find pending request
+    response = await supabase.table("mute_requests")\
+        .select("*")\
+        .eq("username", username)\
+        .eq("status", "pending")\
+        .maybeSingle()\
+        .execute()
+    
+    if not response.data:
+        await update.message.reply_text(f"Cannot find pending mute request for @{username}")
+        return
+    
+    request = response.data
+    # ... execute mute ...
+    
+    # Mark as approved
+    await supabase.table("mute_requests")\
+        .update({"status": "approved"})\
+        .eq("id", request["id"])\
+        .execute()
+
 # ===== MAIN =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
