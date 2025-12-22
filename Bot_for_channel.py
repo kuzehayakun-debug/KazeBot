@@ -127,23 +127,132 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("moderate error:", e)
 
 
+from datetime import timedelta
+
+# Global storage para sa pending mute requests (simple dict: username -> requester)
+pending_mutes = {}
+
+async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /mute @username or /mute username [duration]\nExample: /mute @noisyplayer or /mute @noisyplayer 6h")
+        return
+
+    username_arg = context.args[0].lstrip('@')
+    duration_text = "1 hour"  # Default
+    duration = timedelta(hours=1)
+
+    if len(context.args) > 1:
+        arg = context.args[1].lower()
+        try:
+            if arg.endswith('h'):
+                hours = int(arg[:-1])
+                duration = timedelta(hours=hours)
+                duration_text = f"{hours} hour{'s' if hours > 1 else ''}"
+            elif arg.endswith('d'):
+                days = int(arg[:-1])
+                duration = timedelta(days=days)
+                duration_text = f"{days} day{'s' if days > 1 else ''}"
+        except:
+            await update.message.reply_text("⚠️ Invalid duration. Use h or d (e.g. 6h, 2d)")
+            return
+
+    requester_name = update.effective_user.full_name or update.effective_user.username
+
+    # Save pending request
+    pending_mutes[username_arg.lower()] = {
+        'requester': requester_name,
+        'duration': duration,
+        'duration_text': duration_text
+    }
+
+    await update.message.reply_text(
+        f"📩 Mute request for @{username_arg} ({duration_text}) has been sent to admins.\n"
+        f"Requested by: {requester_name}\n"
+        "Waiting for approval..."
+    )
+
+async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Check kung admin or owner ba ang nag-approve
+    member = await update.effective_chat.get_member(update.effective_user.id)
+    if member.status not in ("administrator", "creator"):
+        await update.message.reply_text("❌ Only admins/owner can approve mutes.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("⚠️ Usage: /approve @username or /approve username")
+        return
+
+    username_arg = context.args[0].lstrip('@').lower()
+
+    if username_arg not in pending_mutes:
+        await update.message.reply_text(f"❌ No pending mute request for @{username_arg}")
+        return
+
+    request = pending_mutes[username_arg]
+    chat_id = update.message.chat.id
+
+    try:
+        # Kuhaa ang user ID base sa username
+        target_member = await context.bot.get_chat_member(chat_id, f"@{username_arg}")
+        target_user = target_member.user
+        target_name = target_user.full_name or target_user.username
+
+        # Actual mute
+        await context.bot.restrict_chat_member(
+            chat_id=chat_id,
+            user_id=target_user.id,
+            permissions={
+                'can_send_messages': False,
+                'can_send_media_messages': False,
+                'can_send_polls': False,
+                'can_send_other_messages': False,
+                'can_add_web_page_previews': False,
+            },
+            until_date=int(time.time() + request['duration'].total_seconds())
+        )
+
+        await update.message.reply_text(
+            f"🔇 @{username_arg} ({target_name}) has been muted for {request['duration_text']}.\n"
+            f"Approved by: {update.effective_user.full_name}\n"
+            f"Originally requested by: {request['requester']}"
+        )
+
+        # Tanggalon ang pending request
+        del pending_mutes[username_arg]
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed to mute @{username_arg}. User may have left or I lack permission.")
+
+# Optional: Auto-notify admins kung naay pending request pag mo-join or mo-send message
+async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    member = update.effective_user
+    chat_member = await update.effective_chat.get_member(member.id)
+    
+    if chat_member.status in ("administrator", "creator") and pending_mutes:
+        pending_list = "\n".join([f"- @{user}" for user in pending_mutes.keys()])
+        await update.message.reply_text(
+            f"👮 Admin alert! There are pending mute requests:\n{pending_list}\n"
+            "Use /approve @username to approve."
+        )
+
+# ===== SA MAIN() FUNCTION =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
-
+    
     app = Application.builder().token(token).build()
-
-    # Moderation FIRST (group=0)
-    app.add_handler(MessageHandler(filters.ALL, moderate), group=0)
-
-    # Other handlers
-    app.add_handler(CommandHandler("start", start), group=1)
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
-
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
-
-
-if __name__ == "__main__":
-    keep_alive()
-    main()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    
+    # Mute request (pwede sa tanan members)
+    app.add_handler(CommandHandler("mute", mute_request))
+    
+    # Approve mute (admins/owner ra)
+    app.add_handler(CommandHandler("approve", approve_mute))
+    
+    # Auto-notify admins kung naay pending (kung mo-send message or mo-join)
+    app.add_handler(MessageHandler(filters.StatusUpdate.MY_CHAT_MEMBER | filters.ALL, notify_pending))
+    
+    app.run_polling()
