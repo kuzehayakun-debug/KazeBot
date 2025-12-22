@@ -114,9 +114,15 @@ def main():
     
     app = Application.builder().token(token).build()
     
+    # Regular handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    app.add_handler(MessageHandler(filters.ALL, block_links), group=0)
+    
+    # ANTI-SPAM HANDLER – kini ang mo-delete sa links ug forwarded messages
+    app.add_handler(MessageHandler(
+        filters.TEXT | filters.CAPTION | filters.FORWARDED,
+        anti_spam_handler
+    ))
     
     app.run_polling()
 
