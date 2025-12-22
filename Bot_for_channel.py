@@ -114,13 +114,13 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # delete forwarded messages
         if msg_is_forwarded(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "No forward allowed.")
+            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
             return
 
         # delete link messages (kahit normal chat)
         if msg_has_link(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "No chat link allowed.")
+            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
             return
 
     except Exception as e:
