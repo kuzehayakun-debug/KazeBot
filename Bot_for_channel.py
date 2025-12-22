@@ -110,22 +110,20 @@ async def block_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
-    
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var in Render.")
+
     app = Application.builder().token(token).build()
-    
-    # Regular handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    
-    # ANTI-SPAM HANDLER – kini ang mo-delete sa links ug forwarded messages
-    app.add_handler(MessageHandler(
-        filters.TEXT | filters.CAPTION | filters.FORWARDED,
-        anti_spam_handler
-    ))
-    
+
+    # Unahin ang moderation handler (group=0)
+    app.add_handler(MessageHandler(filters.ALL, block_forwarded_links), group=0)
+    app.add_handler(MessageHandler(filters.ALL, block_links), group=0)
+
+    # Iba pang handlers (group=1+)
+    app.add_handler(CommandHandler("start", start), group=1)
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
+
     app.run_polling()
 
 if __name__ == "__main__":
-    keep_alive()
+    keep_alive()  # kung Web Service ka sa Render
     main()
