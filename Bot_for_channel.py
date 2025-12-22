@@ -243,24 +243,25 @@ def main():
 
     app = Application.builder().token(token).build()
 
-    # Moderation FIRST (group=0)
-    app.add_handler(MessageHandler(filters.ALL, moderate), group=0)
-
-    # Other handlers
-    app.add_handler(CommandHandler("start", start), group=1)
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
-
-       # Mute request (pwede sa tanan members)
+    # ===== COMMANDS FIRST (para dili ma-block sa filters.ALL) =====
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("mute", mute_request))
-    
-    # Approve mute (admins/owner ra)
     app.add_handler(CommandHandler("approve", approve_mute))
-    
-    # Auto-notify admins kung naay pending mute request
-    app.add_handler(MessageHandler(filters.ALL, notify_pending))
+
+    # ===== STATUS UPDATES (welcome new members) =====
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+
+    # ===== ANTI-SPAM / MODERATION (last para dili ma-block ang commands) =====
+    # Gamit specific filters ra, dili filters.ALL para dili ma-catch ang commands
+    app.add_handler(MessageHandler(
+        (filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND,
+        moderate  # or anti_spam kung mao imong function name
+    ))
+
+    # ===== AUTO-NOTIFY PENDING MUTES (kung mo-send message ang admin) =====
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, notify_pending))
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == "__main__":
     keep_alive()
