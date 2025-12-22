@@ -22,7 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     full_name = user.full_name.strip() if user.full_name else "Player"
     
     start_message = (
-        f"HELLO {full}, I'M KAZEBOT! 🤖\n\n"
+        f"HELLO {full_name.upper()}, I'M KAZEBOT! 🤖\n\n"
         "WELCOME TO PALARO!\n"
         "Type /help to see what I can do.\n"
         "Please stay active and cooperative.\n\n"
@@ -73,7 +73,7 @@ async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         if msg_is_forwarded(msg) and msg_has_link(msg):
             await msg.delete()
-            warn = await msg.chat.send_message("Forwarded links are not allowed. Message removed.")
+            warn = await msg.chat.send_message("⚠️ Links and forwarded messages are not allowed to prevent ads/spam.")
             await asyncio.sleep(5)
             try:
                 await warn.delete()
@@ -82,6 +82,25 @@ async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TY
     except Exception as e:
         # Optional: log e
         pass
+
+async def block_forwarded_links(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg:
+        return
+    try:
+        if msg_is_forwarded(msg) and msg_has_link(msg):
+            await msg.delete()
+
+            warn = await msg.chat.send_message("❌Forwarded messages are not allowed kupal.")
+            await asyncio.sleep(5)  # optional auto-delete ng warning
+
+            try:
+                await warn.delete()
+            except:
+                pass
+    except:
+        pass
+        
 # -------------------------------------
 
 def main():
