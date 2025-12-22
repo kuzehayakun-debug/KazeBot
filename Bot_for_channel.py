@@ -240,22 +240,27 @@ def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
-    
+
     app = Application.builder().token(token).build()
-    
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    
-    # Mute request (pwede sa tanan members)
+
+    # Moderation FIRST (group=0)
+    app.add_handler(MessageHandler(filters.ALL, moderate), group=0)
+
+    # Other handlers
+    app.add_handler(CommandHandler("start", start), group=1)
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome), group=1)
+
+       # Mute request (pwede sa tanan members)
     app.add_handler(CommandHandler("mute", mute_request))
     
     # Approve mute (admins/owner ra)
     app.add_handler(CommandHandler("approve", approve_mute))
     
-    # Auto-notify admins kung naay pending (kung mo-send message or mo-join)
-    app.add_handler(MessageHandler(filters.StatusUpdate.MY_CHAT_MEMBER | filters.ALL, notify_pending))
-    
-    app.run_polling()
+    # Auto-notify admins kung naay pending mute request
+    app.add_handler(MessageHandler(filters.ALL, notify_pending))
+
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
 
 if __name__ == "__main__":
     keep_alive()
