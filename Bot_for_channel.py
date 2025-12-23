@@ -88,44 +88,39 @@ def msg_has_link(msg) -> bool:
 
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    if not msg:
+    if not msg or not msg.from_user:
         return
 
-    # ===== OWNER ALLOW =====
-    if OWNER_ID and msg.from_user and msg.from_user.id == OWNER_ID:
+    user_id = msg.from_user.id
+
+    # OWNER exception: ikaw pwede mag-forward at mag-link
+    if OWNER_ID and user_id == OWNER_ID:
         return
 
-    # ===== ADMIN / CREATOR ALLOW =====
-    if msg.from_user:
-        try:
-            member = await context.bot.get_chat_member(msg.chat.id, msg.from_user.id)
-            if member.status in ("administrator", "creator"):
-                return
-        except:
-            pass
-
+    # Optional: if you want admins also allowed, uncomment below:
+    # member = await context.bot.get_chat_member(msg.chat.id, user_id)
     try:
-        # ===== BLOCK FORWARDED =====
+        member = await context.bot.get_chat_member(msg.chat.id, user_id)
+        if member.status in ("administrator", "creator"):
+            return
+    except Exception:
+        pass
+        
+    try:
+        # delete forwarded messages
         if msg_is_forwarded(msg):
-            await send_temp_warning(
-                msg.chat,
-                "⚠️ Forward messages are not allowed to prevent ads/spam."
-            )
             await msg.delete()
+            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
             return
 
-        # ===== BLOCK LINKS =====
+        # delete link messages (kahit normal chat)
         if msg_has_link(msg):
-            await send_temp_warning(
-                msg.chat,
-                "⚠️ Links are not allowed."
-            )
             await msg.delete()
+            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
             return
 
     except Exception as e:
         print("moderate error:", e)
-
         
 from datetime import timedelta
 
