@@ -250,6 +250,48 @@ async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text("Pogi")
         return
         
+    if re.search(r"\bphia\b", text):
+        await msg.reply_text("Phia maganda")
+        return
+
+async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not context.args:
+        await msg.reply_text(
+            "⚠️ Usage:\n/report @username reason\n\nExample:\n/report @user spamming links"
+        )
+        return
+
+    reported_user = context.args[0]
+    reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason provided"
+
+    chat = update.effective_chat
+    reporter = update.effective_user  # hindi natin ipapakita to
+
+    # kumpirmahin sa reporter
+    await msg.reply_text(
+        "✅ Your report has been sent anonymously to the admins. Thank you for helping keep the group safe."
+    )
+
+    # kuhanin admins
+    admins = await context.bot.get_chat_administrators(chat.id)
+
+    for admin in admins:
+        if admin.user.is_bot:
+            continue
+
+        try:
+            await context.bot.send_message(
+                admin.user.id,
+                f"🚨 *Anonymous Report*\n\n"
+                f"👤 *Reported user:* {reported_user}\n"
+                f"📝 *Reason:* {reason}\n"
+                f"📍 *Group:* {chat.title}",
+                parse_mode="Markdown"
+            )
+        except:
+            pass
+            
 # ===== SA MAIN() FUNCTION =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -262,6 +304,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("mute", mute_request))
     app.add_handler(CommandHandler("approve", approve_mute))
+    app.add_handler(CommandHandler("report", report_user))
 
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
