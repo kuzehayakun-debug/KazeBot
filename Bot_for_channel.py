@@ -1,4 +1,3 @@
-import time
 import os
 import re
 import asyncio
@@ -86,6 +85,15 @@ def msg_has_link(msg) -> bool:
 
     return False
 
+async def send_temp_warning(chat, text: str, seconds: int = 5):
+    warn = await chat.send_message(text)
+    await asyncio.sleep(seconds)
+    try:
+        await warn.delete()
+    except Exception:
+        pass
+
+
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -99,13 +107,9 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Optional: if you want admins also allowed, uncomment below:
     # member = await context.bot.get_chat_member(msg.chat.id, user_id)
-    try:
-        member = await context.bot.get_chat_member(msg.chat.id, user_id)
-        if member.status in ("administrator", "creator"):
-            return
-    except Exception:
-        pass
-        
+    # if member.status in ("administrator", "creator"):
+    #     return
+
     try:
         # delete forwarded messages
         if msg_is_forwarded(msg):
@@ -121,7 +125,8 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         print("moderate error:", e)
-        
+
+
 from datetime import timedelta
 
 # Global storage para sa pending mute requests (simple dict: username -> requester)
@@ -261,3 +266,4 @@ def main():
 if __name__ == "__main__":
     keep_alive()
     main()
+            
