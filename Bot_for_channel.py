@@ -86,15 +86,6 @@ def msg_has_link(msg) -> bool:
 
     return False
 
-async def send_temp_warning(chat, text: str, seconds: int = 5):
-    warn = await chat.send_message(text)
-    await asyncio.sleep(seconds)
-    try:
-        await warn.delete()
-    except Exception:
-        pass
-
-
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -102,8 +93,8 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = msg.from_user.id
 
-    # OWNER exception: ikaw pwede mag-forward at mag-link
-    if OWNER_ID and user_id == OWNER_ID:
+    # OWNER exception: pwede mag-forward at mag-link
+    if OWNER_ID and int(user_id) == int(OWNER_ID):
         return
 
     # Admins also allowed
@@ -121,7 +112,7 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
             return
 
-        # delete link messages (kahit normal chat)
+        # delete link messages
         if msg_has_link(msg):
             await msg.delete()
             await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
