@@ -88,39 +88,39 @@ def msg_has_link(msg) -> bool:
 
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    if not msg or not msg.from_user:
+    if not msg:
         return
 
-    user_id = msg.from_user.id
-
-    # OWNER exception: pwede mag-forward at mag-link
-    if OWNER_ID and int(user_id) == int(OWNER_ID):
-        return
-
-    # Admins also allowed
-    try:
-        member = await context.bot.get_chat_member(msg.chat.id, user_id)
-        if member.status in ("administrator", "creator"):
+    # ===== OWNER ALLOW (USER OR CHANNEL) =====
+    if OWNER_ID:
+        if msg.from_user and msg.from_user.id == OWNER_ID:
             return
-    except Exception:
-        pass
+        if msg.sender_chat and msg.sender_chat.id == OWNER_ID:
+            return
+
+    # ===== ADMIN ALLOW =====
+    if msg.from_user:
+        try:
+            member = await context.bot.get_chat_member(msg.chat.id, msg.from_user.id)
+            if member.status in ("administrator", "creator"):
+                return
+        except:
+            pass
 
     try:
-        # delete forwarded messages
         if msg_is_forwarded(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
+            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed.")
             return
 
-        # delete link messages
         if msg_has_link(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
+            await send_temp_warning(msg.chat, "⚠️ Links are not allowed.")
             return
 
     except Exception as e:
         print("moderate error:", e)
-
+        
 from datetime import timedelta
 
 # Global storage para sa pending mute requests (simple dict: username -> requester)
