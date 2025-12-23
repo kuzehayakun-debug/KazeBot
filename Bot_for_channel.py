@@ -91,14 +91,11 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not msg:
         return
 
-    # ===== OWNER ALLOW (USER OR CHANNEL) =====
-    if OWNER_ID:
-        if msg.from_user and msg.from_user.id == OWNER_ID:
-            return
-        if msg.sender_chat and msg.sender_chat.id == OWNER_ID:
-            return
+    # ===== OWNER ALLOW (NORMAL USER ONLY) =====
+    if OWNER_ID and msg.from_user and msg.from_user.id == OWNER_ID:
+        return
 
-    # ===== ADMIN ALLOW =====
+    # ===== ADMIN / CREATOR ALLOW =====
     if msg.from_user:
         try:
             member = await context.bot.get_chat_member(msg.chat.id, msg.from_user.id)
@@ -108,16 +105,22 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     try:
-        # delete forwarded messages
+        # ===== BLOCK FORWARDED =====
         if msg_is_forwarded(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
+            await send_temp_warning(
+                msg.chat,
+                "⚠️ Forward messages are not allowed to prevent ads/spam."
+            )
             return
 
-        # delete link messages (kahit normal chat)
+        # ===== BLOCK LINKS =====
         if msg_has_link(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
+            await send_temp_warning(
+                msg.chat,
+                "⚠️ Links are not allowed."
+            )
             return
 
     except Exception as e:
