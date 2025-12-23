@@ -258,35 +258,30 @@ async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not context.args:
         await msg.reply_text(
-            "⚠️ Usage:\n/report @username reason\n\nExample:\n/report @user spamming links"
+            "⚠️ Usage:\n/report @username reason\nExample: /report @user spamming links"
         )
         return
 
     reported_user = context.args[0]
     reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason provided"
-
     chat = update.effective_chat
-    reporter = update.effective_user  # hindi natin ipapakita to
 
-    # kumpirmahin sa reporter
-    await msg.reply_text(
-        "✅ Your report has been sent anonymously to the admins. Thank you for helping keep the group safe."
-    )
+    # Confirm to reporter
+    await msg.reply_text("✅ Your report has been sent anonymously to the admins.")
 
-    # kuhanin admins
+    # Get admins
     admins = await context.bot.get_chat_administrators(chat.id)
 
     for admin in admins:
         if admin.user.is_bot:
             continue
-
         try:
             await context.bot.send_message(
                 admin.user.id,
                 f"🚨 *Anonymous Report*\n\n"
-                f"👤 *Reported user:* {reported_user}\n"
-                f"📝 *Reason:* {reason}\n"
-                f"📍 *Group:* {chat.title}",
+                f"👤 Reported user: {reported_user}\n"
+                f"📝 Reason: {reason}\n"
+                f"📍 Group: {chat.title}",
                 parse_mode="Markdown"
             )
         except:
