@@ -290,7 +290,20 @@ async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         except:
             pass
-            
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    help_text = (
+        "🤖 *KAZEBOT COMMANDS*\n\n"
+        "👤 *Member Commands:*\n"
+        "/start - Greet and info about the bot\n"
+        "/report @username reason - Report a user anonymously to admins\n\n"
+        "- Forwarded messages not allowed\n"
+        "- Links not allowed\n\n"
+        "/mute @username [duration] - Mute a member ⚠️ Not fix /mute, don't use it yet\n\n"
+        "Please follow the rules and have fun! 🔥"
+    )
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+    
 # ===== SA MAIN() FUNCTION =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -304,6 +317,7 @@ def main():
     app.add_handler(CommandHandler("mute", mute_request))
     app.add_handler(CommandHandler("approve", approve_mute))
     app.add_handler(CommandHandler("report", report_user))
+    app.add_handler(CommandHandler("help", help_command))
 
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
