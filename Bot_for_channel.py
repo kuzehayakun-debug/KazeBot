@@ -106,10 +106,13 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if OWNER_ID and user_id == OWNER_ID:
         return
 
-    # Optional: if you want admins also allowed, uncomment below:
-    # member = await context.bot.get_chat_member(msg.chat.id, user_id)
-    # if member.status in ("administrator", "creator"):
-    #     return
+    # Admins also allowed
+    try:
+        member = await context.bot.get_chat_member(msg.chat.id, user_id)
+        if member.status in ("administrator", "creator"):
+            return
+    except Exception:
+        pass
 
     try:
         # delete forwarded messages
@@ -126,7 +129,6 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         print("moderate error:", e)
-
 
 from datetime import timedelta
 
