@@ -235,23 +235,28 @@ async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Use /approve @username to approve."
         )
 
-async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def detect_kaze(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.text:
         return
 
     text = msg.text.lower()
 
-    # detect whole word kaze
+    # detect whole word "kaze"
     if re.search(r"\bkaze\b", text):
-        await msg.reply_text("Pogi si Kaze")
+        await msg.reply_text("Pogi si Kaze!")
+
+async def detect_kuri(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.text:
         return
 
-    # detect whole word kuri
+    text = msg.text.lower()
+
+    # detect whole word "kaze"
     if re.search(r"\bkuri\b", text):
         await msg.reply_text("Pogi")
-        return
-
+        
 # ===== SA MAIN() FUNCTION =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -268,6 +273,7 @@ def main():
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_kaze))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_kuri))
 
     # ===== ANTI-SPAM / MODERATION (last para dili ma-block ang commands) =====
     # Gamit specific filters ra, dili filters.ALL para dili ma-catch ang commands
