@@ -266,8 +266,11 @@ async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason provided"
     chat = update.effective_chat
 
-    # Confirm to reporter
-    await msg.reply_text("✅ Your report has been sent anonymously to the admins.")
+    # Get reporter info
+    reporter_name = update.effective_user.full_name or update.effective_user.username
+
+    # Confirm to reporter (member)
+    await msg.reply_text("✅ Your report has been sent to the admins Owner.")
 
     # Get admins
     admins = await context.bot.get_chat_administrators(chat.id)
@@ -278,9 +281,10 @@ async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.send_message(
                 admin.user.id,
-                f"🚨 *Anonymous Report*\n\n"
+                f"🚨 *Report Notification*\n\n"
                 f"👤 Reported user: {reported_user}\n"
                 f"📝 Reason: {reason}\n"
+                f"🕵️ Reported by: {reporter_name}\n"
                 f"📍 Group: {chat.title}",
                 parse_mode="Markdown"
             )
