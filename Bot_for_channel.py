@@ -74,7 +74,7 @@ def msg_has_link(msg) -> bool:
         return True
 
     # plain domains without http(s), ex: google.com
-    if re.search(r"\b[a-z0-9-]+\.(com|net|org|io|co|me|gg|app|xyz|site|dev|ph)\b", t):
+    if re.search(r"\b[a-z0-9-]+|net|org|io|co|me|gg|app|xyz|site|dev|ph)\b", t):
         return True
 
     # telegram entities (clickable links)
