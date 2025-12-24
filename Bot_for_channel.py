@@ -69,19 +69,20 @@ def msg_has_link(msg) -> bool:
     text = (msg.text or msg.caption or "")[:4096]
     t = text.lower()
 
-    # Block http/https, www., t.me links
-    if re.search(r"(https?://|www\.|t\.me/|telegram\.me/)", t):
+    # Block only t.me or telegram.me links
+    if "t.me/" in t or "telegram.me/" in t:
         return True
 
-    # Check telegram clickable links (ignore emails)
+    # Check telegram clickable links (entities)
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
         if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
-            # check if URL is NOT an email
-            if not re.match(r"[^@\s]+@[^@\s]+\.[a-z]+", e.url, re.IGNORECASE):
+            # Only block if URL contains t.me or telegram.me
+            url = getattr(e, "url", "") or ""
+            if "t.me/" in url.lower() or "telegram.me/" in url.lower():
                 return True
 
-    # Otherwise, allow plain text emails
+    # Otherwise, allow
     return False
 
 async def send_temp_warning(chat, text: str, seconds: int = 5):
@@ -99,15 +100,6 @@ async def send_temp_warning(chat, text: str, seconds: int = 5):
             return True
 
     return False
-
-async def send_temp_warning(chat, text: str, seconds: int = 5):
-    warn = await chat.send_message(text)
-    await asyncio.sleep(seconds)
-    try:
-        await warn.delete()
-    except Exception:
-        pass
-
 
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
@@ -269,6 +261,38 @@ async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text("Phia maganda")
         return
 
+    # ===== HI / HELLO =====
+    if re.search(r"\b(hi|hello|hey|hoy|yo)\b", text):
+        await update.message.reply_text("👋 Hi! Kumusta ka?")
+        return
+
+    # ===== THANK YOU =====
+    if re.search(r"\b(thanks|thank you|thx|salamat)\b", text):
+        await update.message.reply_text("🙏 Walang anuman! 😊")
+        return
+
+    # ===== GOOD NIGHT =====
+    if re.search(r"\b(good night|gn|gabing gabi)\b", text):
+        await update.message.reply_text("🌙 Good night! Pahinga na 😴")
+        return
+
+    # ===== GOOD MORNING =====
+    if re.search(r"\b(good morning|gm|umaga na)\b", text):
+        await update.message.reply_text("☀️ Good morning! Ingat today 💪")
+        return
+
+    # ===== WHAT TIME =====
+    if re.search(r"\b(anong oras|oras na|time na)\b", text):
+        tz = pytz.timezone("Asia/Manila")
+        now = datetime.now(tz)
+        time_now = now.strftime("%I:%M %p")
+
+        await update.message.reply_text(
+            f"⏰ Oras ngayon: **{time_now}**",
+            parse_mode="Markdown"
+        )
+        return
+
 async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not context.args:
@@ -318,122 +342,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Please follow the rules and have fun! 🔥"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
-
-import random
-import datetime
-
-async def smart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    if not msg or not msg.text:
-        return
-
-    text = msg.text.lower()
-
-    # sasagot lang kapag tinawag ang bot
-    if "bot" not in text:
-        return
-
-    replies = []
-
-    # ===== GREETINGS =====
-    if any(w in text for w in ["hi", "hello", "uy", "yo", "hoy"]):
-        replies.append("Hello 👋 kumusta ka?")
-
-    if "kamusta" in text or "kumusta" in text:
-        replies.append("Ayos lang 😄 ikaw kamusta?")
-
-    if "good morning" in text:
-        replies.append("Good morning ☀️ sana maganda araw mo!")
-
-    if "good night" in text:
-        replies.append("Good night 🌙 pahinga na!")
-
-    # ===== THANKS / SORRY =====
-    if any(w in text for w in ["salamat", "thanks", "tnx"]):
-        replies.append("Walang anuman 🤝")
-
-    if "sorry" in text:
-        replies.append("Okay lang yan 👍")
-
-    # ===== RULES / INFO =====
-    if "rules" in text or "bawal" in text:
-        replies.append(
-            "📌 Rules dito:\n"
-            "- Bawal links 🚫\n"
-            "- Bawal forwarded messages 🚫\n"
-            "Pag may issue, gamitin ang /report"
-        )
-
-    if "help" in text or "tulong" in text:
-        replies.append("ℹ️ Type /help para makita lahat ng commands.")
-
-    if "report" in text:
-        replies.append("🚨 Para mag-report: /report @username reason")
-
-    if "admin" in text or "owner" in text:
-        replies.append("👮 Admins at owner ang nagbabantay dito.")
-
-    # ===== CHANNEL / GROUP =====
-    if "join" in text or "sali" in text:
-        replies.append("📢 Check pinned message para sa link ng channel.")
-
-    if "link" in text:
-        replies.append("⚠️ Bawal mag-send ng links dito.")
-
-    # ===== FUN / CASUAL =====
-    if "tara laro" in text or "game" in text:
-        replies.append("🎮 Tara! Anong laro?")
-
-    if "gg" in text:
-        replies.append("GG! 💪")
-
-    if "haha" in text or "lol" in text:
-        replies.append("😂😂")
-
-    if "love" in text:
-        replies.append("❤️ Spread good vibes lang!")
-
-import re
-from datetime import datetime
-import pytz
-
-async def auto_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-
-    text = update.message.text.lower()
-
-    # ===== HI / HELLO =====
-    if re.search(r"\b(hi|hello|hey|hoy|yo)\b", text):
-        await update.message.reply_text("👋 Hi! Kumusta ka?")
-        return
-
-    # ===== THANK YOU =====
-    if re.search(r"\b(thanks|thank you|thx|salamat)\b", text):
-        await update.message.reply_text("🙏 Walang anuman! 😊")
-        return
-
-    # ===== GOOD NIGHT =====
-    if re.search(r"\b(good night|gn|gabing gabi)\b", text):
-        await update.message.reply_text("🌙 Good night! Pahinga na 😴")
-        return
-
-    # ===== GOOD MORNING =====
-    if re.search(r"\b(good morning|gm|umaga na)\b", text):
-        await update.message.reply_text("☀️ Good morning! Ingat today 💪")
-        return
-
-    # ===== WHAT TIME =====
-    if re.search(r"\b(anong oras|oras na|time na)\b", text):
-        tz = pytz.timezone("Asia/Manila")
-        now = datetime.now(tz)
-        time_now = now.strftime("%I:%M %p")
-
-        await update.message.reply_text(
-            f"⏰ Oras ngayon: **{time_now}**",
-            parse_mode="Markdown"
-        )
-        return
         
 # ===== SA MAIN() FUNCTION =====
 def main():
