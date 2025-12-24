@@ -103,9 +103,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===== MAIN FUNCTION =====
 def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")  # match sa Render env variable
-if not token:
-    raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
+    token = os.getenv("TELEGRAM_BOT_TOKEN")  # <-- siguraduhing kapareho sa Render env var
+    if not token:
+        raise RuntimeError("Missing TELEGRAM_TOKEN env var.")
+
     app = Application.builder().token(token).build()
 
     # Commands
