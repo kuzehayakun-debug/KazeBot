@@ -19,6 +19,9 @@ def keep_alive():
     port = int(os.environ.get("PORT", 10000))
     Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
 
+# ===== GLOBAL STORAGE =====
+pending_bans = {}  # Pending temp or permanent bans
+ban_logs = []      # Stores logs of bans
 
 # ===== MODERATION HELPERS =====
 def msg_is_forwarded(msg) -> bool:
@@ -37,8 +40,10 @@ def msg_has_tme_link(msg) -> bool:
         return True
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
-        if getattr(e, "url", "").lower().find("t.me/") != -1 or getattr(e, "url", "").lower().find("telegram.me/") != -1:
-            return True
+        if e.type in ("url", "text_link"):
+            url = getattr(e, "url", "") or ""
+            if "t.me/" in url.lower() or "telegram.me/" in url.lower():
+                return True
     return False
 
 async def send_temp_warning(chat, text: str, seconds: int = 5):
@@ -49,8 +54,7 @@ async def send_temp_warning(chat, text: str, seconds: int = 5):
     except Exception:
         pass
 
-
-# ===== MODERATION FUNCTION =====
+# ===== MODERATION =====
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -67,7 +71,7 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         member = await context.bot.get_chat_member(msg.chat.id, user_id)
         if member.status in ("administrator", "creator"):
             return
-    except Exception:
+    except:
         pass
 
     try:
@@ -82,133 +86,155 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.delete()
             await send_temp_warning(msg.chat, "⚠️ t.me links are not allowed!")
             return
-
     except Exception as e:
         print("moderate error:", e)
 
-
-# ===== MUTE SYSTEM =====
-pending_mutes = {}  # user_id -> info dict
-
-async def mute_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text(
-            "⚠️ Usage: /mute @username [duration]\nExample: /mute @user 6h"
-        )
-        return
-
-    # Try to resolve user by username or ID
-    chat_id = update.effective_chat.id
-    username_arg = context.args[0].lstrip("@")
-    duration = timedelta(hours=1)  # default
-
-    # parse duration
-    if len(context.args) > 1:
-        arg = context.args[1].lower()
-        try:
-            if arg.endswith("h"):
-                duration = timedelta(hours=int(arg[:-1]))
-            elif arg.endswith("d"):
-                duration = timedelta(days=int(arg[:-1]))
-        except:
-            pass
-
-    try:
-        # Get user object
-        target_member = await context.bot.get_chat_member(chat_id, username_arg)
-        target_user = target_member.user
-    except:
-        await update.message.reply_text(f"❌ Failed to find user {username_arg}.")
-        return
-
-    # Save pending mute by user_id
-    pending_mutes[target_user.id] = {
-        "requester": update.effective_user.full_name,
-        "duration": duration,
-        "username": target_user.username or target_user.full_name
-    }
-
-    await update.message.reply_text(
-        f"📩 Mute request for @{pending_mutes[target_user.id]['username']} ({duration}) saved.\n"
-        f"Requested by: {update.effective_user.full_name}\nWaiting for admin/owner approval..."
-    )
-
-async def approve_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    member = await update.effective_chat.get_member(update.effective_user.id)
-    if member.status not in ("administrator", "creator"):
-        await update.message.reply_text("❌ Only admins/owner can approve mutes.")
-        return
-
-    if not context.args:
-        await update.message.reply_text("⚠️ Usage: /approve <user_id>")
-        return
-
-    try:
-        target_id = int(context.args[0])
-    except:
-        await update.message.reply_text("❌ Invalid user ID.")
-        return
-
-    if target_id not in pending_mutes:
-        await update.message.reply_text("❌ No pending mute request for this user.")
-        return
-
-    request = pending_mutes[target_id]
-
-    try:
-        until = int((datetime.now() + request["duration"]).timestamp())
-        await context.bot.restrict_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=target_id,
-            permissions={
-                "can_send_messages": False,
-                "can_send_media_messages": False,
-                "can_send_polls": False,
-                "can_send_other_messages": False,
-                "can_add_web_page_previews": False
-            },
-            until_date=until
-        )
-
-        await update.message.reply_text(
-            f"🔇 @{request['username']} has been muted for {request['duration']}.\n"
-            f"Approved by: {update.effective_user.full_name}\n"
-            f"Originally requested by: {request['requester']}"
-        )
-
-        del pending_mutes[target_id]
-
-    except Exception as e:
-        await update.message.reply_text(
-            f"❌ Failed to mute @{request['username']}. User may have left or bot lacks permission."
-        )
-
-
-async def notify_pending(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    member = update.effective_user
-    chat_member = await update.effective_chat.get_member(member.id)
-
-    if chat_member.status in ("administrator", "creator") and pending_mutes:
-        pending_list = "\n".join([f"- {info['username']}" for info in pending_mutes.values()])
-        await update.message.reply_text(
-            f"👮 Admin alert! There are pending mute requests:\n{pending_list}\n"
-            "Use /approve <user_id> to approve."
-        )
-
-
-# ===== START COMMAND =====
+# ===== COMMANDS =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    full_name = user.full_name if user else "Player"
+    full_name = user.full_name.strip() if user and user.full_name else "Player"
     await update.message.reply_text(
-        f"Hi {full_name}! I'm your moderation bot.\n"
-        "- I block forwarded messages\n"
-        "- I block t.me links\n"
-        "- Use /mute and /approve to manage members (admins/owner only)"
+        f"HI {full_name.upper()}, I AM KAZEBOT! 🤖\n"
+        "I WILL HELP MODERATE THIS CHANNEL.\n"
+        "Forwarded messages and t.me links are not allowed!"
     )
 
+# ===== BAN REQUESTS =====
+async def temp_ban_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not context.args:
+        await msg.reply_text("⚠️ Usage: /tempban @username 1h30m reason")
+        return
+    username = context.args[0].lstrip('@').lower()
+    duration_str = context.args[1] if len(context.args) > 1 else "1h"
+    reason = " ".join(context.args[2:]) if len(context.args) > 2 else "No reason"
 
-# ===== MAIN FUNCTION =====
+    # Parse duration
+    hours, minutes, days = 0, 0, 0
+    m_h = re.search(r"(\d+)h", duration_str)
+    m_m = re.search(r"(\d+)m", duration_str)
+    m_d = re.search(r"(\d+)d", duration_str)
+    if m_h: hours = int(m_h.group(1))
+    if m_m: minutes = int(m_m.group(1))
+    if m_d: days = int(m_d.group(1))
+    duration = timedelta(days=days, hours=hours, minutes=minutes)
+
+    pending_bans[username] = {
+        "type": "temp",
+        "duration": duration,
+        "reason": reason,
+        "requester": msg.from_user.full_name or msg.from_user.username,
+        "time": datetime.now()
+    }
+
+    await msg.reply_text(f"📩 Temporary ban request for @{username} saved ({duration}). Waiting for approval.")
+    await notify_pending_bans(update, context)
+
+async def perm_ban_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not context.args:
+        await msg.reply_text("⚠️ Usage: /permban @username reason")
+        return
+    username = context.args[0].lstrip('@').lower()
+    reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason"
+
+    pending_bans[username] = {
+        "type": "perm",
+        "reason": reason,
+        "requester": msg.from_user.full_name or msg.from_user.username,
+        "time": datetime.now()
+    }
+
+    await msg.reply_text(f"📩 Permanent ban request for @{username} saved. Waiting for approval.")
+    await notify_pending_bans(update, context)
+
+# ===== APPROVE BAN =====
+async def approve_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    user_id = msg.from_user.id
+    chat_id = update.effective_chat.id
+    member = await update.effective_chat.get_member(user_id)
+    if member.status not in ("administrator", "creator") and user_id != OWNER_ID:
+        await msg.reply_text("❌ Only admin/owner can approve bans.")
+        return
+    if not context.args:
+        await msg.reply_text("⚠️ Usage: /approve @username")
+        return
+
+    username = context.args[0].lstrip('@').lower()
+    if username not in pending_bans:
+        await msg.reply_text(f"❌ No pending ban request for @{username}")
+        return
+
+    request = pending_bans[username]
+    try:
+        target_member = await context.bot.get_chat_member(chat_id, f"@{username}")
+        target_id = target_member.user.id
+    except:
+        await msg.reply_text(f"❌ Could not find @{username} in chat.")
+        return
+
+    try:
+        if request["type"] == "temp":
+            until_ts = int((datetime.now() + request["duration"]).timestamp())
+            await context.bot.ban_chat_member(chat_id, target_id, until_date=until_ts)
+            await msg.reply_text(f"🔒 @{username} TEMP banned for {request['duration']}. Reason: {request['reason']}")
+        else:
+            await context.bot.ban_chat_member(chat_id, target_id)
+            await msg.reply_text(f"🔒 @{username} PERMANENTLY banned. Reason: {request['reason']}")
+
+        # Log
+        ban_logs.append({
+            "username": username,
+            "type": request["type"],
+            "reason": request["reason"],
+            "approved_by": msg.from_user.full_name,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        del pending_bans[username]
+    except Exception:
+        await msg.reply_text(f"❌ Failed to ban @{username}. User may have left or bot lacks permission.")
+
+# ===== NOTIFY PENDING BANS =====
+async def notify_pending_bans(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not pending_bans: return
+    chat_id = update.effective_chat.id
+    admins = await context.bot.get_chat_administrators(chat_id)
+    pending_list = "\n".join([f"- @{u}" for u in pending_bans.keys()])
+    for admin in admins:
+        if admin.user.is_bot: continue
+        try:
+            await context.bot.send_message(admin.user.id,
+                f"👮 Pending ban requests:\n{pending_list}\nUse /approve @username to approve.")
+        except: pass
+
+# ===== UNBAN =====
+async def unban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    chat_id = update.effective_chat.id
+    if not context.args:
+        await msg.reply_text("⚠️ Usage: /unban @username")
+        return
+    username = context.args[0].lstrip('@').lower()
+    try:
+        target_member = await context.bot.get_chat_member(chat_id, f"@{username}")
+        await context.bot.unban_chat_member(chat_id, target_member.user.id)
+        await msg.reply_text(f"✅ @{username} has been unbanned.")
+    except:
+        await msg.reply_text(f"❌ Failed to unban @{username}. User may have left or bot lacks permission.")
+
+# ===== BAN LOGS =====
+async def ban_logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not ban_logs:
+        await update.message.reply_text("No bans yet.")
+        return
+    lines = []
+    for log in ban_logs:
+        lines.append(f"- @{log['username']} | {log['type']} | {log['reason']} | Approved by: {log['approved_by']} | {log['time']}")
+    text = "\n".join(lines)
+    await update.message.reply_text(f"📜 Ban Logs:\n{text}")
+
+# ===== MAIN =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -218,18 +244,17 @@ def main():
 
     # Commands
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("mute", mute_request))
-    app.add_handler(CommandHandler("approve", approve_mute))
+    app.add_handler(CommandHandler("tempban", temp_ban_request))
+    app.add_handler(CommandHandler("permban", perm_ban_request))
+    app.add_handler(CommandHandler("approve", approve_ban))
+    app.add_handler(CommandHandler("unban", unban_user))
+    app.add_handler(CommandHandler("banlogs", ban_logs_command))
 
     # Moderation
     app.add_handler(MessageHandler((filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND, moderate))
-    # Notify admins on message
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, notify_pending))
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
-
-# ===== RUN =====
 if __name__ == "__main__":
     keep_alive()
     main()
