@@ -287,6 +287,23 @@ async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    if re.search(r"\b(ano ang pangalan mo|who are you)\b", text):
+        await msg.reply_text("🤖 Ako si Kazebot! Bot na tumutulong sa channel na ito.")
+        return
+
+    # ===== FUN / RANDOM =====
+    if re.search(r"\b(gg|good game)\b", text):
+        await msg.reply_text("🎮 GG! Nice play!")
+        return
+
+    if re.search(r"\b(oops|oh no|uh oh)\b", text):
+        await msg.reply_text("😅 Walang problema, relax lang!")
+        return
+
+    if re.search(r"(ha)+", text, re.IGNORECASE):
+    await msg.reply_text("Haha! 😂")
+    return
+    
 async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not context.args:
