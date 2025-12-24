@@ -92,6 +92,10 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("moderate error:", e)
 
 # ===== START COMMAND =====
+from telegram import Update
+from telegram.ext import ContextTypes, CommandHandler
+
+# ===== START COMMAND =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     full_name = user.full_name.strip() if user and user.full_name else "Player"
@@ -100,10 +104,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👋 Hi <b>{full_name}</b>, I am <b>Kazebot</b>! 🤖\n\n"
         "🎮 I will help moderate this channel.\n"
         "⚠️ Forwarded messages and <b>t.me</b> links are not allowed.\n\n"
-        "Please <i>stay active and cooperative</i> enjoy 🔥"
+        "Please <i>stay active and cooperative</i> while enjoying 🔥\n"
+        "Type <code>/help</code> to see what I can do."
     )
 
     await update.message.reply_text(start_message, parse_mode="HTML")
+
 
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
@@ -115,14 +121,15 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         full = (m.full_name or m.first_name or "Player").strip()
 
         welcome_message = (
-    f"👋 Hello <b>{full}</b>, welcome to <b>Palaro</b>! 🎮🔥\n\n"
-    "📌 Please check the pinned rules before playing.\n"
-    "💬 Stay active and follow announcements for updates.\n\n"
-    "👉 If you haven't joined our main channel yet, join here:\n"
-    "<a href='https://t.me/+wkXVYyqiRYplZjk1'>🌐 Main Channel</a>"
-)
-await chat.send_message(welcome_message, parse_mode="HTML", disable_web_page_preview=True)
+            f"👋 Hello <b>{full}</b>, welcome to <b>Palaro</b>! 🎮🔥\n\n"
+            "📌 Please check the pinned rules before playing.\n"
+            "💬 Stay active and follow announcements for updates.\n\n"
+            "👉 If you haven't joined our main channel yet, join here:\n"
+            "<a href='https://t.me/+wkXVYyqiRYplZjk1'>🌐 Main Channel</a>"
+        )
 
+        await chat.send_message(welcome_message, parse_mode="HTML", disable_web_page_preview=True)
+        
 async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.text:
@@ -249,6 +256,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("report", report_user))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("report", report_user))
 
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
