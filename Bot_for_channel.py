@@ -3,7 +3,9 @@ import re
 import asyncio
 from threading import Thread
 from flask import Flask
-from telegram import Update, MessageEntityType
+from datetime import datetime
+import pytz
+from telegram import Update, MessageEntity
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # ===== WEBKEEP ALIVE =====
@@ -39,11 +41,10 @@ def msg_has_tme_link(msg) -> bool:
     # Check clickable links (entities)
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
-        if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
+        if e.type in (MessageEntity.URL, MessageEntity.TEXT_LINK):
             url = getattr(e, "url", "") or ""
             if "t.me/" in url.lower() or "telegram.me/" in url.lower():
                 return True
-
     return False
 
 async def send_temp_warning(chat, text: str, seconds: int = 5):
@@ -90,7 +91,7 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print("moderate error:", e)
 
-# ===== SAMPLE START COMMAND =====
+# ===== START COMMAND =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     full_name = user.full_name.strip() if user and user.full_name else "Player"
@@ -102,17 +103,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ===== MAIN FUNCTION =====
 def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
-
+    token = os.getenv("TELEGRAM_BOT_TOKEN")  # match sa Render env variable
+if not token:
+    raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
     app = Application.builder().token(token).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start))
 
     # Moderation
-    app.add_handler(MessageHandler((filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND, moderate))
+    app.add_handler(
+        MessageHandler(
+            (filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND,
+            moderate
+        )
+    )
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
