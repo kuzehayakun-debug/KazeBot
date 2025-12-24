@@ -56,8 +56,6 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await chat.send_message(welcome_message, disable_web_page_preview=True)
 
-
-# -------------------- Moderation Helpers --------------------
 # ===== MODERATION HELPERS =====
 def msg_is_forwarded(msg) -> bool:
     return bool(
@@ -68,15 +66,15 @@ def msg_is_forwarded(msg) -> bool:
         or getattr(msg, "forward_sender_name", None)
     )
 
-def msg_has_link(msg) -> bool:
+def msg_has_tme_link(msg) -> bool:
     text = (msg.text or msg.caption or "")[:4096]
     t = text.lower()
 
-    # Block only t.me / telegram.me links in text
+    # Block only t.me or telegram.me links in text
     if "t.me/" in t or "telegram.me/" in t:
         return True
 
-    # Check clickable links in entities
+    # Check clickable links (entities)
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
         if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
@@ -84,7 +82,6 @@ def msg_has_link(msg) -> bool:
             if "t.me/" in url.lower() or "telegram.me/" in url.lower():
                 return True
 
-    # Otherwise allow
     return False
 
 async def send_temp_warning(chat, text: str, seconds: int = 5):
@@ -95,6 +92,7 @@ async def send_temp_warning(chat, text: str, seconds: int = 5):
     except Exception:
         pass
 
+# ===== MODERATION FUNCTION =====
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -102,31 +100,33 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = msg.from_user.id
 
-    # OWNER exception: ikaw pwede mag-forward at mag-link
+    # OWNER exception
     if OWNER_ID and user_id == OWNER_ID:
         return
 
-    # Optional: if you want admins also allowed, uncomment below:
-    # member = await context.bot.get_chat_member(msg.chat.id, user_id)
-    # if member.status in ("administrator", "creator"):
-    #     return
+    # ADMIN / CREATOR exception
+    try:
+        member = await context.bot.get_chat_member(msg.chat.id, user_id)
+        if member.status in ("administrator", "creator"):
+            return
+    except Exception:
+        pass
 
     try:
-        # delete forwarded messages
+        # DELETE forwarded messages
         if msg_is_forwarded(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed to prevent ads/spam.")
+            await send_temp_warning(msg.chat, "⚠️ Forward messages are not allowed!")
             return
 
-        # delete link messages (kahit normal chat)
-        if msg_has_link(msg):
+        # DELETE t.me links
+        if msg_has_tme_link(msg):
             await msg.delete()
-            await send_temp_warning(msg.chat, "⚠️ Links are not allowed kupal!")
+            await send_temp_warning(msg.chat, "⚠️ t.me links are not allowed!")
             return
 
     except Exception as e:
         print("moderate error:", e)
-
 
 from datetime import timedelta
 
@@ -267,22 +267,22 @@ async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ===== GOOD NIGHT =====
     if re.search(r"\b(good night|gn|gabing gabi)\b", text):
-        await update.message.reply_text("🌙 Good night! Pahinga na 😴")
+        await update.message.reply_text("🌙 Good night too😴")
         return
 
     # ===== GOOD MORNING =====
     if re.search(r"\b(good morning|gm|umaga na)\b", text):
-        await update.message.reply_text("☀️ Good morning! Ingat today 💪")
+        await update.message.reply_text("☀️ Good morning too!😏")
         return
 
     # ===== WHAT TIME =====
-    if re.search(r"\b(anong oras|oras na|time na)\b", text):
+    if re.search(r"\b(anong oras naba?|time|What time is it?)\b", text):
         tz = pytz.timezone("Asia/Manila")
         now = datetime.now(tz)
         time_now = now.strftime("%I:%M %p")
 
         await update.message.reply_text(
-            f"⏰ Oras ngayon: **{time_now}**",
+            f"⏰ Time check: **{time_now}**",
             parse_mode="Markdown"
         )
         return
