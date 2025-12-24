@@ -386,38 +386,48 @@ async def smart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "love" in text:
         replies.append("❤️ Spread good vibes lang!")
 
-    if "sad" in text or "lungkot" in text:
-        replies.append("Kaya mo yan 💪 nandito lang kami.")
+import re
+from datetime import datetime
+import pytz
 
-    # ===== QUESTIONS =====
-    if "sino ka" in text:
-        replies.append("🤖 Ako si KAZEBOT, bantay at assistant dito.")
+async def auto_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
 
-    if "anong oras" in text or "oras" in text or "time" in text:
-        now = datetime.datetime.now().strftime("%I:%M %p")
-        replies.append(f"🕒 Oras ngayon: {now}")
+    text = update.message.text.lower()
 
-    if "ilang member" in text:
-        try:
-            count = await context.bot.get_chat_member_count(update.effective_chat.id)
-            replies.append(f"👥 Members dito: {count}")
-        except:
-            replies.append("👥 Marami tayo dito 😄")
+    # ===== HI / HELLO =====
+    if re.search(r"\b(hi|hello|hey|hoy|yo)\b", text):
+        await update.message.reply_text("👋 Hi! Kumusta ka?")
+        return
 
-    # ===== DEFAULT =====
-    if not replies:
-        replies.append(
-            random.choice([
-                "🤖 Nakikinig ako 👂",
-                "Pwede mo pa linawin?",
-                "Interesting yan 👀",
-                "Sabihin mo lang kung anong kailangan mo.",
-                "Nandito lang ako 😄"
-            ])
+    # ===== THANK YOU =====
+    if re.search(r"\b(thanks|thank you|thx|salamat)\b", text):
+        await update.message.reply_text("🙏 Walang anuman! 😊")
+        return
+
+    # ===== GOOD NIGHT =====
+    if re.search(r"\b(good night|gn|gabing gabi)\b", text):
+        await update.message.reply_text("🌙 Good night! Pahinga na 😴")
+        return
+
+    # ===== GOOD MORNING =====
+    if re.search(r"\b(good morning|gm|umaga na)\b", text):
+        await update.message.reply_text("☀️ Good morning! Ingat today 💪")
+        return
+
+    # ===== WHAT TIME =====
+    if re.search(r"\b(anong oras|oras na|time na)\b", text):
+        tz = pytz.timezone("Asia/Manila")
+        now = datetime.now(tz)
+        time_now = now.strftime("%I:%M %p")
+
+        await update.message.reply_text(
+            f"⏰ Oras ngayon: **{time_now}**",
+            parse_mode="Markdown"
         )
-
-    await msg.reply_text(random.choice(replies))
-    
+        return
+        
 # ===== SA MAIN() FUNCTION =====
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
