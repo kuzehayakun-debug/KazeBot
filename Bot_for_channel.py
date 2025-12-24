@@ -303,6 +303,112 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Please follow the rules and have fun! 🔥"
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
+
+import random
+import datetime
+
+async def smart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or not msg.text:
+        return
+
+    text = msg.text.lower()
+
+    # sasagot lang kapag tinawag ang bot
+    if "bot" not in text:
+        return
+
+    replies = []
+
+    # ===== GREETINGS =====
+    if any(w in text for w in ["hi", "hello", "uy", "yo", "hoy"]):
+        replies.append("Hello 👋 kumusta ka?")
+
+    if "kamusta" in text or "kumusta" in text:
+        replies.append("Ayos lang 😄 ikaw kamusta?")
+
+    if "good morning" in text:
+        replies.append("Good morning ☀️ sana maganda araw mo!")
+
+    if "good night" in text:
+        replies.append("Good night 🌙 pahinga na!")
+
+    # ===== THANKS / SORRY =====
+    if any(w in text for w in ["salamat", "thanks", "tnx"]):
+        replies.append("Walang anuman 🤝")
+
+    if "sorry" in text:
+        replies.append("Okay lang yan 👍")
+
+    # ===== RULES / INFO =====
+    if "rules" in text or "bawal" in text:
+        replies.append(
+            "📌 Rules dito:\n"
+            "- Bawal links 🚫\n"
+            "- Bawal forwarded messages 🚫\n"
+            "Pag may issue, gamitin ang /report"
+        )
+
+    if "help" in text or "tulong" in text:
+        replies.append("ℹ️ Type /help para makita lahat ng commands.")
+
+    if "report" in text:
+        replies.append("🚨 Para mag-report: /report @username reason")
+
+    if "admin" in text or "owner" in text:
+        replies.append("👮 Admins at owner ang nagbabantay dito.")
+
+    # ===== CHANNEL / GROUP =====
+    if "join" in text or "sali" in text:
+        replies.append("📢 Check pinned message para sa link ng channel.")
+
+    if "link" in text:
+        replies.append("⚠️ Bawal mag-send ng links dito.")
+
+    # ===== FUN / CASUAL =====
+    if "tara laro" in text or "game" in text:
+        replies.append("🎮 Tara! Anong laro?")
+
+    if "gg" in text:
+        replies.append("GG! 💪")
+
+    if "haha" in text or "lol" in text:
+        replies.append("😂😂")
+
+    if "love" in text:
+        replies.append("❤️ Spread good vibes lang!")
+
+    if "sad" in text or "lungkot" in text:
+        replies.append("Kaya mo yan 💪 nandito lang kami.")
+
+    # ===== QUESTIONS =====
+    if "sino ka" in text:
+        replies.append("🤖 Ako si KAZEBOT, bantay at assistant dito.")
+
+    if "anong oras" in text or "oras" in text or "time" in text:
+        now = datetime.datetime.now().strftime("%I:%M %p")
+        replies.append(f"🕒 Oras ngayon: {now}")
+
+    if "ilang member" in text:
+        try:
+            count = await context.bot.get_chat_member_count(update.effective_chat.id)
+            replies.append(f"👥 Members dito: {count}")
+        except:
+            replies.append("👥 Marami tayo dito 😄")
+
+    # ===== DEFAULT =====
+    if not replies:
+        replies.append(
+            random.choice([
+                "🤖 Nakikinig ako 👂",
+                "Pwede mo pa linawin?",
+                "Interesting yan 👀",
+                "Sabihin mo lang kung anong kailangan mo.",
+                "Nandito lang ako 😄"
+            ])
+        )
+
+    await msg.reply_text(random.choice(replies))
     
 # ===== SA MAIN() FUNCTION =====
 def main():
@@ -322,6 +428,7 @@ def main():
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_pogi))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, smart_chat))
     
     # ===== ANTI-SPAM / MODERATION (last para dili ma-block ang commands) =====
     # Gamit specific filters ra, dili filters.ALL para dili ma-catch ang commands
