@@ -1,4 +1,4 @@
-pip install pytz
+pytz
 requests
 PyGithub
 aiofiles
