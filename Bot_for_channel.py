@@ -361,7 +361,6 @@ def main():
     # ===== STATUS UPDATES (welcome new members) =====
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_pogi))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, smart_chat))
     
     # ===== ANTI-SPAM / MODERATION (last para dili ma-block ang commands) =====
     # Gamit specific filters ra, dili filters.ALL para dili ma-catch ang commands
