@@ -1,6 +1,8 @@
 import os
 import re
 import asyncio
+from datetime import datetime
+import pytz
 from threading import Thread
 from flask import Flask
 from telegram import Update
@@ -56,6 +58,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -------------------- Moderation Helpers --------------------
+# ===== MODERATION HELPERS =====
 def msg_is_forwarded(msg) -> bool:
     return bool(
         getattr(msg, "forward_origin", None)
@@ -69,20 +72,19 @@ def msg_has_link(msg) -> bool:
     text = (msg.text or msg.caption or "")[:4096]
     t = text.lower()
 
-    # Block only t.me or telegram.me links
+    # Block only t.me / telegram.me links in text
     if "t.me/" in t or "telegram.me/" in t:
         return True
 
-    # Check telegram clickable links (entities)
+    # Check clickable links in entities
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
         if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
-            # Only block if URL contains t.me or telegram.me
             url = getattr(e, "url", "") or ""
             if "t.me/" in url.lower() or "telegram.me/" in url.lower():
                 return True
 
-    # Otherwise, allow
+    # Otherwise allow
     return False
 
 async def send_temp_warning(chat, text: str, seconds: int = 5):
@@ -92,14 +94,6 @@ async def send_temp_warning(chat, text: str, seconds: int = 5):
         await warn.delete()
     except Exception:
         pass
-
-    # ===== telegram entities (clickable links) =====
-    entities = (msg.entities or []) + (msg.caption_entities or [])
-    for e in entities:
-        if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
-            return True
-
-    return False
 
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
