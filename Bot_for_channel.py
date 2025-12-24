@@ -69,15 +69,23 @@ def msg_has_link(msg) -> bool:
     text = (msg.text or msg.caption or "")[:4096]
     t = text.lower()
 
-    # common link patterns
+    # ===== ALLOW email:pass format (gmail.com:pass etc.) =====
+    # example: test@gmail.com:12345 OR gmail.com:password
+    if re.search(r"\b\S+@\S+\.\S+:\S+\b", t) or re.search(r"\b[a-z0-9.-]+\.(com|net|org|io|co|me|gg|app|xyz|site|dev|ph):\S+\b", t):
+        return False
+
+    # ===== common link patterns =====
     if re.search(r"(https?://|www\.|t\.me/|telegram\.me/)", t):
         return True
 
-    # plain domains without http(s), ex: google.com
-    if re.search(r"\b[a-z0-9-]+|net|org|io|co|me|gg|app|xyz|site|dev|ph)\b", t):
+    # ===== plain domains (NO colon after domain) =====
+    if re.search(
+        r"\b[a-z0-9-]+\.(com|net|org|io|co|me|gg|app|xyz|site|dev|ph)\b(?!:)",
+        t
+    ):
         return True
 
-    # telegram entities (clickable links)
+    # ===== telegram entities (clickable links) =====
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
         if e.type in (MessageEntityType.URL, MessageEntityType.TEXT_LINK):
