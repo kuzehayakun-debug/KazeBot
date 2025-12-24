@@ -133,6 +133,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 <b>Kazebot Commands</b>\n\n"
         "👤 <b>Member Commands:</b>\n"
         "/start - Greet and info about the bot\n"
+        "/help - Show this help message"
         "/report @username reason - Report a user to admin and owner directly\n\n"
         "- Forwarded messages are not allowed\n"
         "- telegram links are not allowed\n\n"
