@@ -1,10 +1,11 @@
 import os
 import re
 import asyncio
-from datetime import datetime, timedelta
 from threading import Thread
 from flask import Flask
-from telegram import Update
+from datetime import datetime
+import pytz
+from telegram import Update, MessageEntity
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 # ===== WEBKEEP ALIVE =====
@@ -19,10 +20,6 @@ def keep_alive():
     port = int(os.environ.get("PORT", 10000))
     Thread(target=lambda: app_web.run(host="0.0.0.0", port=port)).start()
 
-# ===== GLOBAL STORAGE =====
-pending_bans = {}  # Pending temp or permanent bans
-ban_logs = []      # Stores logs of bans
-
 # ===== MODERATION HELPERS =====
 def msg_is_forwarded(msg) -> bool:
     return bool(
@@ -36,11 +33,15 @@ def msg_is_forwarded(msg) -> bool:
 def msg_has_tme_link(msg) -> bool:
     text = (msg.text or msg.caption or "")[:4096]
     t = text.lower()
+
+    # Block only t.me or telegram.me links in text
     if "t.me/" in t or "telegram.me/" in t:
         return True
+
+    # Check clickable links (entities)
     entities = (msg.entities or []) + (msg.caption_entities or [])
     for e in entities:
-        if e.type in ("url", "text_link"):
+        if e.type in (MessageEntity.URL, MessageEntity.TEXT_LINK):
             url = getattr(e, "url", "") or ""
             if "t.me/" in url.lower() or "telegram.me/" in url.lower():
                 return True
@@ -54,7 +55,7 @@ async def send_temp_warning(chat, text: str, seconds: int = 5):
     except Exception:
         pass
 
-# ===== MODERATION =====
+# ===== MODERATION FUNCTION =====
 async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or not msg.from_user:
@@ -71,7 +72,7 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         member = await context.bot.get_chat_member(msg.chat.id, user_id)
         if member.status in ("administrator", "creator"):
             return
-    except:
+    except Exception:
         pass
 
     try:
@@ -86,175 +87,185 @@ async def moderate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg.delete()
             await send_temp_warning(msg.chat, "⚠️ t.me links are not allowed!")
             return
+
     except Exception as e:
         print("moderate error:", e)
 
-# ===== COMMANDS =====
+# ===== START COMMAND =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     full_name = user.full_name.strip() if user and user.full_name else "Player"
-    await update.message.reply_text(
-        f"HI {full_name.upper()}, I AM KAZEBOT! 🤖\n"
-        "I WILL HELP MODERATE THIS CHANNEL.\n"
-        "Forwarded messages and t.me links are not allowed!"
+
+    start_message = (
+        f"👋 Hi <b>{full_name}</b>, I am <b>Kazebot</b>! 🤖\n\n"
+        "🎮 I will help moderate this channel.\n"
+        "⚠️ Forwarded messages and <b>t.me</b> links are not allowed.\n\n"
+        "Please <i>stay active and cooperative</i> enjoy 🔥"
     )
 
-# ===== BAN REQUESTS =====
-async def temp_ban_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(start_message, parse_mode="HTML")
+
+async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
     msg = update.message
-    if not context.args:
-        await msg.reply_text("⚠️ Usage: /tempban @username 1h30m reason")
+    if not msg or not msg.new_chat_members:
         return
-    username = context.args[0].lstrip('@').lower()
-    duration_str = context.args[1] if len(context.args) > 1 else "1h"
-    reason = " ".join(context.args[2:]) if len(context.args) > 2 else "No reason"
 
-    # Parse duration
-    hours, minutes, days = 0, 0, 0
-    m_h = re.search(r"(\d+)h", duration_str)
-    m_m = re.search(r"(\d+)m", duration_str)
-    m_d = re.search(r"(\d+)d", duration_str)
-    if m_h: hours = int(m_h.group(1))
-    if m_m: minutes = int(m_m.group(1))
-    if m_d: days = int(m_d.group(1))
-    duration = timedelta(days=days, hours=hours, minutes=minutes)
+    for m in msg.new_chat_members:
+        full = (m.full_name or m.first_name or "Player").strip()
 
-    pending_bans[username] = {
-        "type": "temp",
-        "duration": duration,
-        "reason": reason,
-        "requester": msg.from_user.full_name or msg.from_user.username,
-        "time": datetime.now()
-    }
+        welcome_message = (
+    f"👋 Hello <b>{full}</b>, welcome to <b>Palaro</b>! 🎮🔥\n\n"
+    "📌 Please check the pinned rules before playing.\n"
+    "💬 Stay active and follow announcements for updates.\n\n"
+    "👉 If you haven't joined our main channel yet, join here:\n"
+    "<a href='https://t.me/+wkXVYyqiRYplZjk1'>🌐 Main Channel</a>"
+)
+await chat.send_message(welcome_message, parse_mode="HTML", disable_web_page_preview=True)
 
-    await msg.reply_text(f"📩 Temporary ban request for @{username} saved ({duration}). Waiting for approval.")
-    await notify_pending_bans(update, context)
-
-async def perm_ban_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def detect_pogi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    if not context.args:
-        await msg.reply_text("⚠️ Usage: /permban @username reason")
+    if not msg or not msg.text:
         return
-    username = context.args[0].lstrip('@').lower()
-    reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason"
 
-    pending_bans[username] = {
-        "type": "perm",
-        "reason": reason,
-        "requester": msg.from_user.full_name or msg.from_user.username,
-        "time": datetime.now()
-    }
+    text = msg.text.lower()
 
-    await msg.reply_text(f"📩 Permanent ban request for @{username} saved. Waiting for approval.")
-    await notify_pending_bans(update, context)
+    if re.search(r"\bkaze\b", text):
+        await msg.reply_text("Pogi si Kaze!")
+        return
 
-# ===== APPROVE BAN =====
-async def approve_ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if re.search(r"\bkuri\b", text):
+        await msg.reply_text("Pogi")
+        return
+        
+    if re.search(r"\bphia\b", text):
+        await msg.reply_text("Phia maganda")
+        return
+
+    # ===== HI / HELLO =====
+    if re.search(r"\b(hi|hello|hey|hoy|yo)\b", text):
+        await update.message.reply_text("👋 Hi! Kumusta ka?")
+        return
+
+    # ===== THANK YOU =====
+    if re.search(r"\b(thanks|thank you|thx|salamat)\b", text):
+        await update.message.reply_text("🙏 Walang anuman! 😊")
+        return
+
+    # ===== GOOD NIGHT =====
+    if re.search(r"\b(good night|gn|gabing gabi)\b", text):
+        await update.message.reply_text("🌙 Good night too😴")
+        return
+
+    # ===== GOOD MORNING =====
+    if re.search(r"\b(good morning|gm|umaga na)\b", text):
+        await update.message.reply_text("☀️ Good morning too!😏")
+        return
+
+    # ===== WHAT TIME =====
+    if re.search(r"\b(anong oras naba?|time|What time is it?)\b", text):
+        tz = pytz.timezone("Asia/Manila")
+        now = datetime.now(tz)
+        time_now = now.strftime("%I:%M %p")
+
+        await update.message.reply_text(
+            f"⏰ Time check: **{time_now}**",
+            parse_mode="Markdown"
+        )
+        return
+
+    if re.search(r"\b(ano ang pangalan mo|who are you)\b", text):
+        await msg.reply_text("🤖 Ako si Kazebot! Bot na tumutulong sa channel na ito.")
+        return
+
+    # ===== FUN / RANDOM =====
+    if re.search(r"\b(gg|good game)\b", text):
+        await msg.reply_text("🎮 GG! Nice play!")
+        return
+
+    if re.search(r"\b(oops|oh no|uh oh)\b", text):
+        await msg.reply_text("🤥 Ehh?")
+        return
+    
+async def report_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
-    user_id = msg.from_user.id
-    chat_id = update.effective_chat.id
-    member = await update.effective_chat.get_member(user_id)
-    if member.status not in ("administrator", "creator") and user_id != OWNER_ID:
-        await msg.reply_text("❌ Only admin/owner can approve bans.")
-        return
-    if not context.args:
-        await msg.reply_text("⚠️ Usage: /approve @username")
+    if not msg or not context.args:
+        await msg.reply_text(
+            "⚠️ Usage:\n/report @username reason\nExample: /report @user spamming links"
+        )
         return
 
-    username = context.args[0].lstrip('@').lower()
-    if username not in pending_bans:
-        await msg.reply_text(f"❌ No pending ban request for @{username}")
-        return
+    reported_user = context.args[0]
+    reason = " ".join(context.args[1:]) if len(context.args) > 1 else "No reason provided"
+    chat = update.effective_chat
 
-    request = pending_bans[username]
-    try:
-        target_member = await context.bot.get_chat_member(chat_id, f"@{username}")
-        target_id = target_member.user.id
-    except:
-        await msg.reply_text(f"❌ Could not find @{username} in chat.")
-        return
+    # Get reporter info
+    reporter_name = update.effective_user.full_name or update.effective_user.username
 
-    try:
-        if request["type"] == "temp":
-            until_ts = int((datetime.now() + request["duration"]).timestamp())
-            await context.bot.ban_chat_member(chat_id, target_id, until_date=until_ts)
-            await msg.reply_text(f"🔒 @{username} TEMP banned for {request['duration']}. Reason: {request['reason']}")
-        else:
-            await context.bot.ban_chat_member(chat_id, target_id)
-            await msg.reply_text(f"🔒 @{username} PERMANENTLY banned. Reason: {request['reason']}")
+    # Confirm to reporter (member)
+    await msg.reply_text("✅ Your report has been sent to the admins Owner.")
 
-        # Log
-        ban_logs.append({
-            "username": username,
-            "type": request["type"],
-            "reason": request["reason"],
-            "approved_by": msg.from_user.full_name,
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-        del pending_bans[username]
-    except Exception:
-        await msg.reply_text(f"❌ Failed to ban @{username}. User may have left or bot lacks permission.")
+    # Get admins
+    admins = await context.bot.get_chat_administrators(chat.id)
 
-# ===== NOTIFY PENDING BANS =====
-async def notify_pending_bans(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not pending_bans: return
-    chat_id = update.effective_chat.id
-    admins = await context.bot.get_chat_administrators(chat_id)
-    pending_list = "\n".join([f"- @{u}" for u in pending_bans.keys()])
     for admin in admins:
-        if admin.user.is_bot: continue
+        if admin.user.is_bot:
+            continue
         try:
-            await context.bot.send_message(admin.user.id,
-                f"👮 Pending ban requests:\n{pending_list}\nUse /approve @username to approve.")
-        except: pass
+            await context.bot.send_message(
+                admin.user.id,
+                f"🚨 *Report Notification*\n\n"
+                f"👤 Reported user: {reported_user}\n"
+                f"📝 Reason: {reason}\n"
+                f"🕵️ Reported by: {reporter_name}\n"
+                f"📍 Group: {chat.title}",
+                parse_mode="Markdown"
+            )
+        except:
+            pass
 
-# ===== UNBAN =====
-async def unban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = update.message
-    chat_id = update.effective_chat.id
-    if not context.args:
-        await msg.reply_text("⚠️ Usage: /unban @username")
-        return
-    username = context.args[0].lstrip('@').lower()
-    try:
-        target_member = await context.bot.get_chat_member(chat_id, f"@{username}")
-        await context.bot.unban_chat_member(chat_id, target_member.user.id)
-        await msg.reply_text(f"✅ @{username} has been unbanned.")
-    except:
-        await msg.reply_text(f"❌ Failed to unban @{username}. User may have left or bot lacks permission.")
-
-# ===== BAN LOGS =====
-async def ban_logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not ban_logs:
-        await update.message.reply_text("No bans yet.")
-        return
-    lines = []
-    for log in ban_logs:
-        lines.append(f"- @{log['username']} | {log['type']} | {log['reason']} | Approved by: {log['approved_by']} | {log['time']}")
-    text = "\n".join(lines)
-    await update.message.reply_text(f"📜 Ban Logs:\n{text}")
-
-# ===== MAIN =====
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    help_text = (
+        "🤖 *KAZEBOT COMMANDS*\n\n"
+        "👤 *Member Commands:*\n"
+        "/start - Greet and info about the bot\n"
+        "/report @username reason - Report a user anonymously to admins\n\n"
+        "- Forwarded messages not allowed\n"
+        "- Links not allowed\n\n"
+        "/mute @username [duration] - Mute a member ⚠️ Not fix /mute, don't use it yet\n\n"
+        "Please follow the rules and have fun! 🔥"
+    )
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+    
+# ===== MAIN FUNCTION =====
 def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    token = os.getenv("TELEGRAM_BOT_TOKEN")  # <-- siguraduhing kapareho sa Render env var
     if not token:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN env var.")
+        raise RuntimeError("Missing TELEGRAM_TOKEN env var.")
 
     app = Application.builder().token(token).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("tempban", temp_ban_request))
-    app.add_handler(CommandHandler("permban", perm_ban_request))
-    app.add_handler(CommandHandler("approve", approve_ban))
-    app.add_handler(CommandHandler("unban", unban_user))
-    app.add_handler(CommandHandler("banlogs", ban_logs_command))
+    app.add_handler(CommandHandler("report", report_user))
+    app.add_handler(CommandHandler("help", help_command))
 
+    # ===== STATUS UPDATES (welcome new members) =====
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_pogi))
+    
     # Moderation
-    app.add_handler(MessageHandler((filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND, moderate))
+    app.add_handler(
+        MessageHandler(
+            (filters.TEXT | filters.CAPTION | filters.FORWARDED) & ~filters.COMMAND,
+            moderate
+        )
+    )
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
+# ===== RUN =====
 if __name__ == "__main__":
     keep_alive()
     main()
+    
